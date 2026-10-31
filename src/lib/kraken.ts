@@ -4,6 +4,8 @@
 // so components always receive a complete picture.
 import type { Book, Candle, Feed, FeedStatus, Level, Ticker, Trade, Unsub } from "./types";
 
+const KRAKEN_REST = "https://api.kraken.com";
+
 type Listener<T> = { fn: (v: T) => void; onError?: (m: string) => void };
 
 type Sub = {
@@ -160,9 +162,7 @@ export class KrakenFeed implements Feed {
         if (s) { s.listeners.forEach((l) => l.fn(batch)); }
       });
     } else if (ch === "ohlc") {
-      if (msg.type === "snapshot") {
-        for (const d of msg.data) { const s = this.subs.get(`ohlc|${d.symbol}|${d.interval}`); if (s) s.candles = []; }
-      }
+      // snapshots and updates are both upserts: REST history may already be loaded
       for (const d of msg.data) {
         const s = this.subs.get(`ohlc|${d.symbol}|${d.interval}`);
         if (!s) continue;
@@ -197,6 +197,27 @@ export class KrakenFeed implements Feed {
     return this.add<Trade[]>(`trade|${symbol}`, { channel: "trade", symbol: [symbol], snapshot: true }, { fn, onError });
   }
   candles(symbol: string, minutes: number, fn: (c: Candle[]) => void, onError?: (m: string) => void) {
-    return this.add<Candle[]>(`ohlc|${symbol}|${minutes}`, { channel: "ohlc", symbol: [symbol], interval: minutes, snapshot: true }, { fn, onError });
+    const key = `ohlc|${symbol}|${minutes}`;
+    const isNew = !this.subs.has(key);
+    const unsub = this.add<Candle[]>(key, { channel: "ohlc", symbol: [symbol], interval: minutes, snapshot: true }, { fn, onError });
+    // The WebSocket snapshot only carries a handful of recent candles; backfill from REST.
+    if (isNew) this.backfill(key, symbol, minutes);
+    return unsub;
+  }
+
+  private async backfill(key: string, symbol: string, minutes: number) {
+    try {
+      const r = await fetch(`${KRAKEN_REST}/0/public/OHLC?pair=${encodeURIComponent(symbol)}&interval=${minutes}`);
+      const j = await r.json();
+      const rows: unknown[][] | undefined = j?.result?.[Object.keys(j.result ?? {}).find((k) => k !== "last") ?? ""];
+      const s = this.subs.get(key);
+      if (!s || !Array.isArray(rows)) return;
+      const hist: Candle[] = rows.map((x) => ({ t: num(x[0]) * 1000, o: num(x[1]), h: num(x[2]), l: num(x[3]), c: num(x[4]), v: num(x[6]) }))
+        .filter((c) => isFinite(c.t) && isFinite(c.c));
+      const live = new Map((s.candles ?? []).map((c) => [c.t, c]));
+      hist.forEach((c) => { if (!live.has(c.t)) live.set(c.t, c); }); // live candles win
+      s.candles = [...live.values()].sort((a, b) => a.t - b.t).slice(-400);
+      this.emit(s, s.candles.slice());
+    } catch { /* history is a nice-to-have; live candles still arrive */ }
   }
 }

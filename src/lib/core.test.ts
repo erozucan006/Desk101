@@ -109,6 +109,23 @@ describe("KrakenFeed", () => {
     expect(got.c?.length).toBe(3);
   });
 
+  it("backfills candle history from REST and lets live candles win", async () => {
+    const hour = 3600;
+    vi.stubGlobal("fetch", async () => ({ json: async () => ({ error: [], result: { "ETH/USD": [
+      [1000 * hour, "1", "2", "0.5", "1.5", "1", "10", 5],
+      [1001 * hour, "1.5", "2", "1", "1.8", "1", "10", 5],
+    ], last: 0 } }) }));
+    const f = new KrakenFeed("wss://x");
+    const ws = FakeWS.last;
+    let got: Candle[] = [];
+    f.candles("ETH/USD", 60, (c) => (got = c));
+    ws.open();
+    ws.push({ channel: "ohlc", type: "snapshot", data: [{ symbol: "ETH/USD", open: 1.5, high: 3, low: 1, close: 2.9, volume: 1, interval_begin: new Date(1001 * hour * 1000).toISOString(), interval: 60 }] });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(got.length).toBe(2);
+    expect(got[1].c).toBe(2.9);
+  });
+
   it("reports unsupported pairs to the listener", () => {
     const f = new KrakenFeed("wss://x");
     const ws = FakeWS.last;
