@@ -1,5 +1,5 @@
 // Product-level settings. Change the name here once it is decided.
-export const APP_NAME = "Learning Terminal";
+export const APP_NAME = "Desk101";
 export const APP_TAGLINE = "The trading terminal that explains itself.";
 
 export type Quote = "USD" | "EUR";

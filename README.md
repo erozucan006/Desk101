@@ -1,6 +1,6 @@
-# Learning Terminal (working name)
+# Desk101
 
-A live crypto trading terminal that explains every number on screen. Built for students and beginners who want to learn to read markets, not just watch them.
+A live crypto trading terminal that explains every number on screen. Your first trading desk. Built for students and beginners who want to learn to read markets, not just watch them.
 
 **v0.1 demo** — crypto only, English UI, no accounts.
 
