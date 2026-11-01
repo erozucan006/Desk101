@@ -26,7 +26,12 @@ async function get(url, accept) {
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
     const r = await fetch(url, { signal: ctrl.signal, headers: { accept, "user-agent": "Desk101/0.5 (+https://desk101.vercel.app)" } });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) {
+      // FRED explains rejections in its body (e.g. an unregistered key); pass that on, never the URL.
+      let why = "";
+      try { const b = await r.text(); why = (b.match(/"error_message"\s*:\s*"([^"]+)"/) || [])[1] || ""; } catch { /* ignore */ }
+      throw new Error(`HTTP ${r.status}${why ? `: ${why}` : ""}`);
+    }
     return accept.includes("json") ? r.json() : r.text();
   } finally {
     clearTimeout(t);
@@ -63,7 +68,7 @@ export function parseFred(json) {
 }
 
 export async function GET() {
-  const key = process.env.FRED_API_KEY;
+  const key = (process.env.FRED_API_KEY || "").trim().replace(/^["']|["']$/g, "");
   const series = {}, sources = [];
 
   const fredJobs = FRED.map(async (s) => {
@@ -95,6 +100,7 @@ export async function GET() {
   return new Response(JSON.stringify({
     updated: Date.now(),
     fred: key ? "ok" : "missing-key",
+    fredKeyShape: key ? { length: key.length, lowerAlnum: /^[a-z0-9]+$/.test(key) } : null,
     series,
     errors: sources,
   }), {
