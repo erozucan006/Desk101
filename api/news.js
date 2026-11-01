@@ -15,7 +15,10 @@ const FEEDS = [
   { id: "fed", name: "Federal Reserve", cat: "central-bank", tier: "official", url: "https://www.federalreserve.gov/feeds/press_all.xml" },
   { id: "fed-speech", name: "Federal Reserve", cat: "central-bank", tier: "official", url: "https://www.federalreserve.gov/feeds/speeches.xml", kind: "Speech" },
   { id: "ecb", name: "ECB", cat: "central-bank", tier: "official", url: "https://www.ecb.europa.eu/rss/press.html" },
-  { id: "bls", name: "US Bureau of Labor Statistics", cat: "data", tier: "official", url: "https://www.bls.gov/feed/bls_latest.rss" },
+  { id: "bls-cpi", name: "US Bureau of Labor Statistics", cat: "data", tier: "official", url: "https://www.bls.gov/feed/cpi.rss" },
+  { id: "bls-jobs", name: "US Bureau of Labor Statistics", cat: "data", tier: "official", url: "https://www.bls.gov/feed/empsit.rss" },
+  { id: "bls-ppi", name: "US Bureau of Labor Statistics", cat: "data", tier: "official", url: "https://www.bls.gov/feed/ppi.rss" },
+  { id: "bls-jolts", name: "US Bureau of Labor Statistics", cat: "data", tier: "official", url: "https://www.bls.gov/feed/jolts.rss" },
   { id: "sec", name: "SEC", cat: "regulation", tier: "official", url: "https://www.sec.gov/news/pressreleases.rss" },
   { id: "esma", name: "ESMA", cat: "regulation", tier: "official", url: "https://www.esma.europa.eu/rss.xml" },
 ];
@@ -84,7 +87,9 @@ async function load(feed) {
   try {
     const r = await fetch(feed.url, { signal: ctrl.signal, headers: { "user-agent": "Desk101/0.6 (+https://desk101.vercel.app)", accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5" } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const items = parseFeed(await r.text(), feed);
+    const body = await r.text();
+    const items = parseFeed(body, feed);
+    if (!items.length) return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: `no items parsed (${r.headers.get("content-type") || "?"}): ${body.slice(0, 160).replace(/\s+/g, " ")}` } };
     return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: true, count: items.length, sponsoredRemoved: items.sponsored || 0 } };
   } catch (e) {
     return { items: [], status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: String(e && e.name === "AbortError" ? "timeout" : e && e.message || e) } };
