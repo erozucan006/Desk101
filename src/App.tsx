@@ -210,7 +210,7 @@ export default function App() {
         </div>
 
         <section className="pnl chartbox">
-          <PanelHead code="GP" title={symbol} learn="candles" status={chartErr ? "unavailable" : candles.length ? <span title="Scroll to zoom, drag to move through history, double-click to reset">{candles.length} candles · scroll to zoom, drag to pan</span> : "loading…"}>
+          <PanelHead code="GP" title={symbol} learn="candles" status={chartErr ? "unavailable" : candles.length ? <span title="Zoom with the mouse wheel or two fingers, drag to move through history, double-click to reset">{candles.length} candles · zoom: scroll or pinch · pan: drag</span> : "loading…"}>
             <div className="tabs" data-learn="timeframe" role="tablist">
               {TIMEFRAMES.map((x) => <button key={x.label} role="tab" aria-selected={tf === x.label} onClick={() => setTf(x.label)}>{x.label}</button>)}
             </div>
@@ -254,7 +254,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.8 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.9 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>

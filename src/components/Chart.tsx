@@ -62,6 +62,8 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
   const ref = useRef<HTMLCanvasElement>(null);
   const layout = useRef<Layout | null>(null);
   const drag = useRef<{ x: number; end: number; moved: boolean } | null>(null);
+  const pts = useRef(new Map<number, { x: number; y: number }>()); // active pointers (fingers)
+  const pinch = useRef<{ d0: number; cnt0: number; anchor: number; f: number } | null>(null);
   const [count, setCount] = useState(DEFAULT_VISIBLE);
   const [end, setEnd] = useState(0);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
@@ -128,6 +130,15 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
     return () => cv.removeEventListener("wheel", onWheel);
   }, []);
 
+  // Safari on iOS fires its own page-zoom gestures; keep two-finger gestures for the chart.
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const stop = (e: Event) => e.preventDefault();
+    cv.addEventListener("gesturestart", stop);
+    cv.addEventListener("gesturechange", stop);
+    return () => { cv.removeEventListener("gesturestart", stop); cv.removeEventListener("gesturechange", stop); };
+  }, []);
+
   const zoom = (factor: number) => {
     setCount((c) => Math.max(MIN_VISIBLE, Math.min(n, Math.round(viewWindow(n, c, end).cnt * factor))));
   };
@@ -139,20 +150,63 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
 
   return (
     <>
-      <canvas ref={ref} className={`chart-canvas ${dragging ? "grabbing" : ""}`} aria-label="Price chart. Scroll to zoom, drag to move through history." role="img"
-        onPointerDown={(ev) => { if (ev.button !== 0) return; ev.currentTarget.setPointerCapture(ev.pointerId); drag.current = { x: ev.clientX, end: win.end, moved: false }; }}
-        onPointerMove={(ev) => {
-          const d = drag.current, L = layout.current;
-          if (d && L) {
-            const dx = ev.clientX - d.x;
-            if (Math.abs(dx) > 3) { d.moved = true; setDragging(true); }
-            if (d.moved) setEnd(viewWindow(L.n, L.cnt, d.end + Math.round(dx / Math.max(2, L.step))).end);
+      <canvas ref={ref} className={`chart-canvas ${dragging ? "grabbing" : ""}`} aria-label="Price chart. Scroll or pinch to zoom, drag to move through history." role="img"
+        onPointerDown={(ev) => {
+          if (ev.pointerType === "mouse" && ev.button !== 0) return;
+          ev.currentTarget.setPointerCapture(ev.pointerId);
+          pts.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+          const L = layout.current;
+          if (pts.current.size === 2 && L) {
+            // second finger down: start a pinch anchored at the midpoint between the fingers
+            const [a, b] = [...pts.current.values()];
+            const mid = (a.x + b.x) / 2 - ev.currentTarget.getBoundingClientRect().left;
+            const f = Math.min(1, Math.max(0, (mid - PAD_L) / L.plotW));
+            pinch.current = { d0: Math.hypot(a.x - b.x, a.y - b.y), cnt0: L.cnt, anchor: L.from + f * L.cnt, f };
+            drag.current = null; setDragging(false); setHover(null);
             return;
           }
-          setHover(local(ev));
+          drag.current = { x: ev.clientX, end: win.end, moved: false };
         }}
-        onPointerUp={(ev) => { const moved = drag.current?.moved; drag.current = null; setDragging(false); if (moved) ev.preventDefault(); }}
-        onPointerLeave={() => { if (!drag.current) setHover(null); }}
+        onPointerMove={(ev) => {
+          if (pts.current.has(ev.pointerId)) pts.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+          const P = pinch.current, L = layout.current;
+          if (P && L && pts.current.size >= 2) {
+            const [a, b] = [...pts.current.values()];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < 10) return;
+            const newCnt = Math.max(MIN_VISIBLE, Math.min(L.n, Math.round((P.cnt0 * P.d0) / d)));
+            const newFrom = Math.round(P.anchor - P.f * newCnt);
+            setCount(newCnt);
+            setEnd(viewWindow(L.n, newCnt, L.n - newFrom - newCnt).end);
+            return;
+          }
+          const dr = drag.current;
+          if (dr && L) {
+            const dx = ev.clientX - dr.x;
+            if (Math.abs(dx) > 3) { dr.moved = true; setDragging(true); }
+            if (dr.moved) setEnd(viewWindow(L.n, L.cnt, dr.end + Math.round(dx / Math.max(2, L.step))).end);
+            return;
+          }
+          if (ev.pointerType === "mouse") setHover(local(ev));
+        }}
+        onPointerUp={(ev) => {
+          const wasPinch = !!pinch.current;
+          pts.current.delete(ev.pointerId);
+          if (pts.current.size < 2) pinch.current = null;
+          if (wasPinch) {
+            // one finger lifted: keep panning with the other one without a jump
+            const rest = [...pts.current.values()][0];
+            drag.current = rest ? { x: rest.x, end: win.end, moved: true } : null;
+            if (!rest) setDragging(false);
+            return;
+          }
+          const moved = drag.current?.moved;
+          drag.current = null; setDragging(false);
+          if (moved) ev.preventDefault();
+          else if (ev.pointerType !== "mouse") setHover(local(ev)); // tap shows the crosshair and readout
+        }}
+        onPointerCancel={(ev) => { pts.current.delete(ev.pointerId); pinch.current = null; drag.current = null; setDragging(false); }}
+        onPointerLeave={(ev) => { if (ev.pointerType === "mouse" && !drag.current) setHover(null); }}
         onDoubleClick={() => { setCount(DEFAULT_VISIBLE); setEnd(0); }}
       />
       {hc && (
