@@ -262,10 +262,10 @@ export const LEARN: Record<string, LearnEntry> = {
     read: "Large open positions near one price can pull the market toward it before expiry ('max pain'), and volatility can change once the options are gone. The effect is real but unreliable.",
   },
   news: {
-    title: "News feed",
-    what: "Recent headlines from central banks (Fed, ECB) and crypto news sites, newest first. Each headline links to the original article.",
-    read: "Official items are the central banks' own press releases. Media items are journalism: usually reliable, but sometimes wrong or later corrected. Desk101 does not check them, and it removes sponsored posts and paid press releases. When price jumps, check the feed and the calendar to see whether there was a reason or just thin liquidity.",
-    mistake: "Trading on a headline before reading it, or trusting a single outlet. False reports have moved crypto prices before and reversed minutes later. Wait for confirmation from the official source.",
+    title: "Official news",
+    what: "Press releases straight from the institutions that move markets: the Federal Reserve and the ECB (interest rates, speeches), the US Bureau of Labor Statistics (inflation and jobs data), and the SEC and ESMA (the US and EU market regulators, including crypto rules such as MiCA). Each headline links to the original.",
+    read: "Official releases are the primary source: news articles about them come later and add interpretation. Speeches by central bankers often hint at the next rate decision. Regulator releases matter for crypto when they approve, restrict or fine.",
+    mistake: "Trading on someone else's summary of an official release. Go to the source: the exact wording often matters more than the headline.",
   },
   coach: {
     title: "Coach",

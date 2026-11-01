@@ -1,19 +1,23 @@
-// GET /api/news — merged headlines from public RSS/Atom feeds.
+// GET /api/news — headlines from official institutions only.
 // Runs as a Vercel serverless function. Only titles, links, source and time are passed
-// through; readers click through to the publisher for the article itself.
+// through; readers click through to the institution for the full text.
 // Cached at Vercel's edge for 5 minutes so feeds are fetched rarely, whatever the traffic.
 //
-// Trust: "official" sources are the institutions' own press releases; "media" sources are
-// third-party journalism, shown as published and not verified by Desk101. Sponsored posts and
-// paid press releases are dropped before anything reaches the page.
+// Why official only: the crypto media sites we tried (CoinDesk, Cointelegraph, Decrypt,
+// The Block) restrict commercial or automated use of their content in their terms.
+// The institutions below allow reuse with the source acknowledged:
+//   Federal Reserve Board, SEC, BLS: US government works, free to reuse (credit the agency)
+//   ECB: free use, source cited, reproduced accurately (ecb.europa.eu/home/disclaimer)
+//   ESMA: reproduction authorised provided the source is acknowledged
+// Licensed market news can be added later as tier "media"; the sponsored filter below is kept for that.
 
 const FEEDS = [
-  { id: "fed", name: "Federal Reserve", cat: "macro", tier: "official", url: "https://www.federalreserve.gov/feeds/press_all.xml" },
-  { id: "ecb", name: "ECB", cat: "macro", tier: "official", url: "https://www.ecb.europa.eu/rss/press.html" },
-  { id: "coindesk", name: "CoinDesk", cat: "crypto", tier: "media", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
-  { id: "cointelegraph", name: "Cointelegraph", cat: "crypto", tier: "media", url: "https://cointelegraph.com/rss" },
-  { id: "decrypt", name: "Decrypt", cat: "crypto", tier: "media", url: "https://decrypt.co/feed" },
-  { id: "theblock", name: "The Block", cat: "crypto", tier: "media", url: "https://www.theblock.co/rss.xml" },
+  { id: "fed", name: "Federal Reserve", cat: "central-bank", tier: "official", url: "https://www.federalreserve.gov/feeds/press_all.xml" },
+  { id: "fed-speech", name: "Federal Reserve", cat: "central-bank", tier: "official", url: "https://www.federalreserve.gov/feeds/speeches.xml", kind: "Speech" },
+  { id: "ecb", name: "ECB", cat: "central-bank", tier: "official", url: "https://www.ecb.europa.eu/rss/press.html" },
+  { id: "bls", name: "US Bureau of Labor Statistics", cat: "data", tier: "official", url: "https://www.bls.gov/feed/bls_latest.rss" },
+  { id: "sec", name: "SEC", cat: "regulation", tier: "official", url: "https://www.sec.gov/news/pressreleases.rss" },
+  { id: "esma", name: "ESMA", cat: "regulation", tier: "official", url: "https://www.esma.europa.eu/rss.xml" },
 ];
 
 // Paid or promotional content: matched on the item's categories, its URL path, or a title prefix.
@@ -33,7 +37,9 @@ const COINS = {
   ADA: /\b(cardano|ada)\b/i, DOGE: /\b(dogecoin|doge)\b/i, LINK: /\b(chainlink)\b/i, AVAX: /\b(avalanche|avax)\b/i,
   DOT: /\b(polkadot)\b/i, LTC: /\b(litecoin|ltc)\b/i, SUI: /\bsui\b/i, PEPE: /\bpepe\b/i,
 };
-// Macro words that make a crypto-site headline relevant to the macro filter too.
+// Crypto words, so regulators' crypto decisions can be picked out.
+const CRYPTO = /\b(crypto|cryptocurrenc(y|ies)|crypto-assets?|digital assets?|stablecoins?|tokens?|blockchain|mica|bitcoin|ether(eum)?|defi|virtual assets?)\b/i;
+// Macro words that make a headline relevant to the macro filter too.
 const MACRO = /\b(fed|fomc|powell|ecb|lagarde|inflation|cpi|pce|rate (cut|hike)s?|interest rates?|jobs report|payrolls|tariffs?|treasur(y|ies)|recession|gdp|dollar)\b/i;
 
 const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", ndash: "–", mdash: "—", hellip: "…" };
@@ -66,7 +72,7 @@ export function parseFeed(xml, feed) {
     const categories = [...b.matchAll(/<category(?:\s[^>]*)?>([\s\S]*?)<\/category>/gi)].map((m) => decode(m[1]));
     if (feed.tier !== "official" && isSponsored(title, link, categories)) { sponsored++; continue; }
     const coins = Object.entries(COINS).filter(([, re]) => re.test(title)).map(([k]) => k);
-    items.push({ id: `${feed.id}:${link}`, title, link, source: feed.name, cat: feed.cat, tier: feed.tier, macro: feed.cat === "macro" || MACRO.test(title), coins, ts });
+    items.push({ id: `${feed.id}:${link}`, title, link, source: feed.name, cat: feed.cat, kind: feed.kind, tier: feed.tier, macro: feed.cat !== "regulation" || MACRO.test(title), crypto: CRYPTO.test(title) || coins.length > 0, coins, ts });
   }
   items.sponsored = sponsored;
   return items;
@@ -76,7 +82,7 @@ async function load(feed) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 6000);
   try {
-    const r = await fetch(feed.url, { signal: ctrl.signal, headers: { "user-agent": "Desk101/0.4 (+https://desk101.vercel.app)", accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5" } });
+    const r = await fetch(feed.url, { signal: ctrl.signal, headers: { "user-agent": "Desk101/0.6 (+https://desk101.vercel.app)", accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5" } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const items = parseFeed(await r.text(), feed);
     return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: true, count: items.length, sponsoredRemoved: items.sponsored || 0 } };
