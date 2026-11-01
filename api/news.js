@@ -92,7 +92,7 @@ async function load(feed) {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const body = await r.text();
     const items = parseFeed(body, feed);
-    if (!items.length) return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: `no items parsed (${r.headers.get("content-type") || "?"}): ${body.slice(0, 160).replace(/\s+/g, " ")}` } };
+    if (!items.length) return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: `no items parsed: ${((body.match(/<item[\s>][\s\S]{0,400}/i) || [body.slice(0, 200)])[0]).replace(/\s+/g, " ")}` } };
     return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: true, count: items.length, sponsoredRemoved: items.sponsored || 0 } };
   } catch (e) {
     return { items: [], status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: String(e && e.name === "AbortError" ? "timeout" : e && e.message || e) } };
