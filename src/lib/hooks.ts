@@ -13,14 +13,22 @@ export function useFeedStatus(feed: Feed): FeedStatus {
 export function useTickers(feed: Feed, symbols: string[]) {
   const [map, setMap] = useState<Record<string, Ticker>>({});
   const [missing, setMissing] = useState<Record<string, true>>({});
+  const subs = useRef(new Map<string, () => void>());
   const key = symbols.join(",");
+  // Subscribe only to symbols that were added and drop only those removed, so editing the
+  // watchlist doesn't resubscribe every pair at once (Kraken rate-limits bursts).
   useEffect(() => {
-    const unsubs = symbols.map((s) =>
-      feed.ticker(s, (t) => setMap((m) => ({ ...m, [s]: t })), () => setMissing((m) => ({ ...m, [s]: true }))),
-    );
-    return () => unsubs.forEach((u) => u());
+    const want = new Set(symbols);
+    subs.current.forEach((u, s) => { if (!want.has(s)) { u(); subs.current.delete(s); } });
+    for (const s of want) {
+      if (subs.current.has(s)) continue;
+      subs.current.set(s, feed.ticker(s,
+        (t) => { setMap((m) => ({ ...m, [s]: t })); setMissing((m) => { if (!m[s]) return m; const n = { ...m }; delete n[s]; return n; }); },
+        () => setMissing((m) => ({ ...m, [s]: true }))));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed, key]);
+  useEffect(() => () => { subs.current.forEach((u) => u()); subs.current.clear(); }, [feed]);
   return { tickers: map, missing };
 }
 

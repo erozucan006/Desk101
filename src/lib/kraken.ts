@@ -12,6 +12,7 @@ type Sub = {
   key: string;
   params: Record<string, unknown>;
   listeners: Set<Listener<any>>;
+  retries?: number;
   // merged state
   bids?: Map<number, number>;
   asks?: Map<number, number>;
@@ -111,8 +112,23 @@ export class KrakenFeed implements Feed {
   private route(msg: any) {
     if (msg.method === "subscribe" && msg.success === false) {
       const key = this.pendingAck.get(msg.req_id);
+      this.pendingAck.delete(msg.req_id);
       const s = key ? this.subs.get(key) : undefined;
-      s?.listeners.forEach((l) => l.onError?.(String(msg.error || "Subscription failed")));
+      if (!s) return;
+      const err = String(msg.error || "Subscription failed");
+      // Only a genuinely unknown pair is "not listed"; rate limits and races are retried.
+      if (/not supported/i.test(err)) {
+        s.listeners.forEach((l) => l.onError?.(err));
+      } else {
+        const tries = (s.retries = (s.retries ?? 0) + 1);
+        if (tries <= 5) setTimeout(() => { if (this.subs.get(s.key) === s) this.send("subscribe", s); }, 600 * tries + Math.random() * 400);
+      }
+      return;
+    }
+    if (msg.method === "subscribe" && msg.success) {
+      const s = this.subs.get(this.pendingAck.get(msg.req_id) ?? "");
+      if (s) s.retries = 0;
+      this.pendingAck.delete(msg.req_id);
       return;
     }
     if (msg.method) return; // other acks
