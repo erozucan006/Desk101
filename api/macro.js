@@ -100,7 +100,6 @@ export async function GET() {
   return new Response(JSON.stringify({
     updated: Date.now(),
     fred: key ? "ok" : "missing-key",
-    fredKeyShape: key ? { length: key.length, lowerAlnum: /^[a-z0-9]+$/.test(key) } : null,
     series,
     errors: sources,
   }), {
