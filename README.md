@@ -2,13 +2,16 @@
 
 A live crypto trading terminal that explains every number on screen. Your first trading desk. Built for students and beginners who want to learn to read markets, not just watch them.
 
-**v0.5** — crypto only, English UI, no accounts.
+**v0.7** — crypto only, English UI, no accounts.
 
 ## Environment variables (Vercel)
 
 - `FRED_API_KEY` — free key from fred.stlouisfed.org; enables US release results in the calendar. Euro-area results need no key.
 
 ## What's in it
+
+- **Official news**: headlines only from institutions that allow reuse with attribution — Federal Reserve (press releases, speeches), ECB, US BLS (CPI, jobs, PPI, JOLTS), SEC, ESMA. Crypto media feeds were removed because their terms restrict commercial/automated use; licensed market news is planned.
+- **Economic calendar** with results (FRED, ECB, Eurostat) and the BTC move after each release.
 
 - **Live market data** from Kraken's public WebSocket API (no API key, no server): watchlist, candlestick chart with EMA 9/21 and RSI 14, order book with spread and imbalance, time & sales with buy/sell pressure, market scanner.
 - **Learn mode** (`L`): click any underlined label to see what it measures, how to read it, a common mistake, and a plain-English reading of the *current* value.
