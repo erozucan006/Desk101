@@ -152,26 +152,24 @@ function zone(tz: string, d = new Date()) {
   const g = (t: string) => p.find((x) => x.type === t)!.value;
   return { h: +g("hour"), m: +g("minute"), wd: g("weekday") };
 }
-export function Sessions() {
-  useNow(30000);
+export function sessionStates(): [string, string, boolean][] {
   const wk = (wd: string) => wd !== "Sat" && wd !== "Sun";
   const open = (tz: string, a: number, b: number) => { const z = zone(tz), t = z.h * 60 + z.m; return wk(z.wd) && t >= a && t < b; };
-  const rows: [string, string, boolean][] = [
-    ["Crypto", "24/7", true],
+  return [
     ["Tokyo", "09:00–15:30 local", open("Asia/Tokyo", 540, 930)],
-    ["Frankfurt (Xetra)", "09:00–17:30 local", open("Europe/Berlin", 540, 1050)],
-    ["London (LSE)", "08:00–16:30 local", open("Europe/London", 480, 990)],
-    ["New York (NYSE)", "09:30–16:00 local", open("America/New_York", 570, 960)],
+    ["Frankfurt", "09:00–17:30 local", open("Europe/Berlin", 540, 1050)],
+    ["London", "08:00–16:30 local", open("Europe/London", 480, 990)],
+    ["New York", "09:30–16:00 local", open("America/New_York", 570, 960)],
   ];
+}
+
+/** One-line strip of stock-market sessions; crypto itself never closes. */
+export function SessionStrip() {
+  useNow(30000);
   return (
-    <section className="pnl">
-      <PanelHead code="MS" title="Market sessions" learn="sessions" />
-      <div className="sess">
-        {rows.map(([n, t, on]) => (
-          <div key={n}><span className={`pill ${on ? "on" : "off"}`}>{on ? "OPEN" : "CLOSED"}</span>{n}<span className="dim right">{t}</span></div>
-        ))}
-      </div>
-      <p className="note">Crypto never closes, but most volume arrives when Europe and the US overlap.</p>
-    </section>
+    <div className="sstrip" data-learn="sessions">
+      <span className="dim">Stock markets</span>
+      {sessionStates().map(([n, t, on]) => <span key={n} className={`sdot ${on ? "on" : ""}`} title={`${n}: ${t}, ${on ? "open" : "closed"}`}>{n}</span>)}
+    </div>
   );
 }

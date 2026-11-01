@@ -112,7 +112,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line-
 /* ---------- layout ---------- */
 .grid { display: grid; gap: 8px; margin-top: 12px; grid-template-columns: 248px minmax(0, 1fr) 308px; }
 .leftcol, .rightcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
-.deck { display: grid; gap: 8px; margin-top: 8px; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+.deck { display: grid; gap: 8px; margin-top: 8px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.2fr) minmax(0, .95fr); }
+.deck .scroll { max-height: 420px; }
+@media (max-width: 1100px) { .deck { grid-template-columns: 1fr 1fr; } .deck .news { order: -1; grid-column: 1 / -1; } }
 /* Desktop: one fixed-height trading area; side panels scroll inside it. */
 @media (min-width: 1101px) {
   .grid { grid-template-rows: minmax(0, 800px); }
@@ -295,3 +297,47 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 .tbl.hover .x { opacity: 0; transition: opacity .1s; }
 .tbl.hover tr:hover .x, .tbl.hover .x:focus-visible { opacity: 1; }
 @media (hover: none) { .tbl.hover .x { opacity: 1; } }
+
+/* ---------- economic calendar ---------- */
+.cal .ph .next { font-size: 12px; color: var(--fg-2); }
+.cal .ph .next b { font-weight: 600; color: var(--fg); }
+.cal-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.cal-bar .chk { font-weight: 500; font-size: 12px; margin-left: auto; }
+.sstrip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 7px 12px; font-size: 11.5px; border-bottom: 1px solid var(--line); color: var(--fg-2); }
+.sdot { display: inline-flex; align-items: center; gap: 5px; color: var(--dim); }
+.sdot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); }
+.sdot.on { color: var(--fg); }
+.sdot.on::before { background: var(--up); box-shadow: 0 0 0 2px var(--up-bg); }
+.cal-date { position: sticky; top: 0; z-index: 1; padding: 6px 12px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--dim); background: var(--panel-2); }
+.cal-row { display: grid; grid-template-columns: 42px 26px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 12px; }
+.cal-row + .cal-row { border-top: 1px solid rgba(34, 42, 53, .6); }
+.cal-row.past { opacity: .5; }
+.cal-row.soon { background: rgba(233, 178, 63, .07); box-shadow: inset 2px 0 0 var(--warn); }
+.cal-time { color: var(--fg-2); }
+.cal-flag { font-size: 10px; font-weight: 700; text-align: center; border-radius: 3px; padding: 1px 0; }
+.cal-flag.r-us { background: rgba(75, 139, 255, .14); color: #8fb5ff; }
+.cal-flag.r-eu { background: rgba(233, 178, 63, .13); color: #f0c873; }
+.cal-flag.r-crypto { background: rgba(160, 139, 255, .14); color: var(--learn); }
+.imp { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+.imp i { width: 3px; border-radius: 1px; background: var(--line-2); }
+.imp i:nth-child(1) { height: 5px; } .imp i:nth-child(2) { height: 8px; } .imp i:nth-child(3) { height: 11px; }
+.imp.medium i:nth-child(-n+2) { background: var(--warn); }
+.imp.high i { background: var(--down); }
+.cal-title { background: none; border: 0; padding: 0; text-align: left; color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cal-title:hover { color: var(--accent); }
+.cal-when { font-size: 12px; white-space: nowrap; }
+.cal-when b { color: var(--warn); font-weight: 600; }
+
+/* ---------- news ---------- */
+.nlist { list-style: none; margin: 0; padding: 0; }
+.nlist li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 9px 12px; }
+.nlist li + li { border-top: 1px solid rgba(34, 42, 53, .6); }
+.n-time { color: var(--dim); font-size: 12px; padding-top: 1px; }
+.n-body a { color: var(--fg); text-decoration: none; font-weight: 500; line-height: 1.4; }
+.n-body a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.n-body a:visited { color: var(--fg-2); }
+.n-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; margin-top: 3px; font-size: 11.5px; }
+.n-src { color: var(--dim); font-weight: 500; }
+.n-src.macro { color: #8fb5ff; }
+.n-meta .tag { margin-left: 6px; }
+.tag.on { background: var(--accent-bg); color: var(--accent); }

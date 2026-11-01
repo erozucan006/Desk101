@@ -15,12 +15,13 @@ type Props = {
   entryCtx: () => JournalTrade["ctx"];
   onPlace: (input: OrderInput) => boolean; // true when accepted
   onClosePosition: (symbol: string) => void;
+  warning?: string; // e.g. a high-impact release is imminent
 };
 
 const num = (s: string) => parseFloat(s.replace(",", "."));
 const round = (x: number, d = 8) => Math.floor(x * 10 ** d) / 10 ** d;
 
-export function OrderTicket({ symbol, quote, qs, ticker, acc, prices, entryCtx, onPlace, onClosePosition }: Props) {
+export function OrderTicket({ symbol, quote, qs, ticker, acc, prices, entryCtx, onPlace, onClosePosition, warning }: Props) {
   const [side, setSide] = useState<Side>("buy");
   const [type, setType] = useState<OrderType>("market");
   const [unit, setUnit] = useState<"coin" | "quote">("quote");
@@ -159,6 +160,7 @@ export function OrderTicket({ symbol, quote, qs, ticker, acc, prices, entryCtx, 
           <label htmlFor="tk-note"><span className="tk-l">Why?</span><input id="tk-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Your reason" maxLength={200} /></label>
         </div>
 
+        {warning && <p className="tk-warn" data-learn="calendar">⚠ {warning}</p>}
         <p className="tk-explain">{explain}</p>
         <button type="submit" className={`tk-go ${side}`} disabled={!qty || !ticker || !!bErr}>
           {side === "buy" ? "Buy" : "Sell"} {qty ? qty.toLocaleString("en-US", { maximumFractionDigits: 6 }) : ""} {base} {type !== "market" ? `· ${type}` : ""}

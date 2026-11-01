@@ -12,8 +12,11 @@ type Props = {
   showRsi: boolean;
   positions: JournalTrade[]; // journal trades for this symbol
   orders?: ChartOrder[]; // resting paper orders for this symbol
+  events?: ChartEvent[]; // macro releases to mark on the time axis
   empty: string;
 };
+
+export type ChartEvent = { t: number; label: string };
 
 export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" | "sl" | "tp" };
 
@@ -22,7 +25,7 @@ const C = {
   ink: "#0e1217", panel: "#141920", ema9: "#5aa2ff", ema21: "#c4a0ff", rsi: "#a08bff", blue: "#4b8bff",
 };
 
-export function Chart({ candles, tf, showEma, showRsi, positions, orders = [], empty }: Props) {
+export function Chart({ candles, tf, showEma, showRsi, positions, orders = [], events = [], empty }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const closes = useMemo(() => candles.map((c) => c.c), [candles]);
   const e9 = useMemo(() => ema(closes, 9), [closes]);
@@ -35,17 +38,17 @@ export function Chart({ candles, tf, showEma, showRsi, positions, orders = [], e
 
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
-    const draw = () => paint(cv, candles.slice(-120), e9.slice(-120), e21.slice(-120), rs.slice(-120), tf, showEma, showRsi, positions, orders, empty);
+    const draw = () => paint(cv, candles.slice(-120), e9.slice(-120), e21.slice(-120), rs.slice(-120), tf, showEma, showRsi, positions, orders, events, empty);
     draw();
     const ro = new ResizeObserver(draw); ro.observe(cv);
     return () => ro.disconnect();
-  }, [candles, e9, e21, rs, tf, showEma, showRsi, positions, orders, empty]);
+  }, [candles, e9, e21, rs, tf, showEma, showRsi, positions, orders, events, empty]);
 
   return <canvas ref={ref} className="chart-canvas" aria-label="Price chart" role="img" />;
 }
 
 function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: (number | null)[], rs: (number | null)[],
-  tf: string, showEma: boolean, showRsi: boolean, positions: JournalTrade[], orders: ChartOrder[], empty: string) {
+  tf: string, showEma: boolean, showRsi: boolean, positions: JournalTrade[], orders: ChartOrder[], events: ChartEvent[], empty: string) {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
   cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
   const ctx = cv.getContext("2d")!;
@@ -82,6 +85,24 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
     const lab = tf === "1D" || tf === "4H" ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     ctx.fillText(lab, X(i), H - padB + 6);
   });
+  // macro events: a faint vertical line at the candle that contains the release
+  const span = cs.length > 1 ? cs[1].t - cs[0].t : 3600_000;
+  const evX = new Map<number, string[]>();
+  events.forEach((e) => {
+    if (e.t < cs[0].t || e.t >= cs[n - 1].t + span) return;
+    const i = Math.min(n - 1, Math.floor((e.t - cs[0].t) / span));
+    evX.set(i, [...(evX.get(i) ?? []), e.label]);
+  });
+  ctx.font = "600 10px 'IBM Plex Sans', system-ui, sans-serif";
+  evX.forEach((labels, i) => {
+    const x = Math.round(X(i)) + 0.5, lab = labels.join(" · "), w = ctx.measureText(lab).width + 8;
+    ctx.strokeStyle = "rgba(160,139,255,.45)"; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(x, padT + 14); ctx.lineTo(x, volBase); ctx.stroke(); ctx.setLineDash([]);
+    const lx = Math.min(Math.max(8, x - w / 2), 8 + plotW - w);
+    ctx.fillStyle = "rgba(160,139,255,.16)"; ctx.fillRect(lx, padT, w, 14);
+    ctx.fillStyle = C.rsi; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(lab, lx + w / 2, padT + 7);
+  });
+  ctx.font = "500 11px 'IBM Plex Sans', system-ui, sans-serif";
   // candles + volume
   cs.forEach((c, i) => {
     const x = X(i), col = c.c >= c.o ? C.up : C.down;

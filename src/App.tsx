@@ -3,15 +3,18 @@ import { APP_NAME, APP_TAGLINE, DEFAULT_WATCH, KRAKEN_WS, TIMEFRAMES, UNIVERSE, 
 import { KrakenFeed } from "./lib/kraken";
 import { DemoFeed } from "./lib/demo";
 import type { Feed } from "./lib/types";
-import { useCandles, useFeedStatus, useJournal, useLive, useStored, useTickers } from "./lib/hooks";
+import { useCandles, useFeedStatus, useJournal, useLive, useNow, useStored, useTickers } from "./lib/hooks";
 import { ccySymbol, compact, money, pct, price } from "./lib/format";
 import { live } from "./lib/live";
-import { Chart, type ChartOrder } from "./components/Chart";
+import { Chart, type ChartEvent, type ChartOrder } from "./components/Chart";
+import { CalendarPanel } from "./components/CalendarPanel";
+import { NewsPanel } from "./components/NewsPanel";
+import { EVENTS, countdown, nextEvent } from "./lib/calendar";
 import { OrderTicket } from "./components/OrderTicket";
 import { AccountPanel } from "./components/AccountPanel";
 import { paper, usePaper } from "./lib/paperStore";
 import type { OrderInput } from "./lib/paper";
-import { OrderBook, PanelHead, Scanner, Sessions, Tape, Watchlist } from "./components/Panels";
+import { OrderBook, PanelHead, Scanner, Tape, Watchlist } from "./components/Panels";
 import { JournalPanel } from "./components/JournalPanel";
 import { LearnDrawer } from "./components/LearnDrawer";
 
@@ -56,6 +59,12 @@ export default function App() {
   useEffect(() => {
     for (const s of new Set(paper.get().orders.map((o) => o.symbol))) if (tickers[s]) paper.tick(tickers[s], tickers);
   }, [tickers]);
+
+  const now = useNow(30_000);
+  const SHORT = { fomc: "FED", ecb: "ECB", cpi: "CPI", nfp: "NFP", pce: "PCE", gdp: "GDP", hicp: "EU CPI", expiry: "EXPIRY" } as const;
+  const chartEvents: ChartEvent[] = useMemo(() => EVENTS.filter((e) => e.impact === "high" && e.at <= now).map((e) => ({ t: e.at, label: SHORT[e.kind] })), [Math.floor(now / 600_000)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const soon = nextEvent(now, { impact: "high" });
+  const eventWarning = soon && soon.at - now < 30 * 60_000 ? `${soon.title} in ${countdown(soon.at - now)}: spreads can widen and price can jump around the release.` : undefined;
 
   const chartOrders: ChartOrder[] = useMemo(() => acc.orders.filter((o) => o.symbol === symbol).map((o) => ({
     price: o.price,
@@ -222,12 +231,12 @@ export default function App() {
           <Legend show={ind} />
           <div className="chartwrap" data-learn="candles">
             <Chart candles={candles} tf={tf} showEma={ind.ema} showRsi={ind.rsi}
-              positions={trades.filter((x) => x.symbol === symbol)} orders={chartOrders} empty={chartErr ? `Chart unavailable: ${chartErr}` : "Loading candles…"} />
+              positions={trades.filter((x) => x.symbol === symbol)} orders={chartOrders} events={chartEvents} empty={chartErr ? `Chart unavailable: ${chartErr}` : "Loading candles…"} />
           </div>
         </section>
 
         <div className="rightcol">
-          <OrderTicket symbol={symbol} quote={quote} qs={qs} ticker={t} acc={acc} prices={prices} entryCtx={entryCtx} onPlace={placeOrder} onClosePosition={closePaper} />
+          <OrderTicket symbol={symbol} quote={quote} qs={qs} ticker={t} acc={acc} prices={prices} entryCtx={entryCtx} onPlace={placeOrder} onClosePosition={closePaper} warning={eventWarning} />
           <Tape feed={feed} symbol={symbol} quoteSym={qs} />
         </div>
       </main>
@@ -237,14 +246,15 @@ export default function App() {
         onReset={() => { paper.reset(); say("Paper account reset to 10,000.", "ok"); }} />
 
       <section className="deck">
+        <CalendarPanel onLearn={(k) => setLearnKey(k)} />
+        <NewsPanel base={sel} />
         <Scanner universe={UNIVERSE} quote={quote} tickers={tickers} watch={watch} onSelect={select} onAdd={add} />
-        <Sessions />
       </section>
 
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.3 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.4 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
       </footer>
 

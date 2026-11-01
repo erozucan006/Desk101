@@ -213,6 +213,60 @@ export const LEARN: Record<string, LearnEntry> = {
     what: "When you add to a position, the entry becomes the size-weighted average of all your buys (or sells, for a short).",
     read: "Adding to a losing position lowers the average but increases the risk. Be deliberate about it.",
   },
+  calendar: {
+    title: "Economic calendar",
+    what: "Scheduled releases that regularly move markets: central bank decisions, inflation, jobs and growth data. Times are shown in your own time zone.",
+    read: "Crypto trades around the clock but reacts to the same macro news as stocks and currencies. In the minutes around a high-impact release, spreads widen and price can jump in either direction.",
+    mistake: "Holding a large position with a tight stop into a release. A sudden spike can trigger the stop and then reverse.",
+  },
+  cal_fomc: {
+    title: "Fed rate decision (FOMC)",
+    what: "The US Federal Reserve's committee sets the target for short-term interest rates eight times a year. The statement comes at 14:00 New York time and the Chair's press conference at 14:30. Four meetings a year also publish economic projections, including the 'dot plot'.",
+    read: "Lower rates and softer language usually support risk assets like crypto; higher rates or a hawkish tone usually weigh on them. Markets often price the decision in advance, so the surprise matters more than the decision itself.",
+    mistake: "Trading the first move. The statement and the press conference can push price in opposite directions within the same hour.",
+  },
+  cal_ecb: {
+    title: "ECB rate decision",
+    what: "The European Central Bank sets euro-area interest rates. The decision is published at 14:15 Frankfurt time, followed by a press conference at 14:45.",
+    read: "It moves EUR first. For crypto it matters most through EUR/USD and through BTC/EUR pairs: if you hold euros, your result depends on the euro too.",
+  },
+  cal_cpi: {
+    title: "US CPI (consumer price inflation)",
+    what: "The monthly change in prices paid by US consumers, published by the Bureau of Labor Statistics at 08:30 New York time. 'Core' CPI leaves out food and energy.",
+    read: "Higher-than-expected inflation makes rate cuts less likely, which tends to push crypto down; lower-than-expected does the opposite. It is often the most volatile release of the month for BTC.",
+    mistake: "Reading only the headline number. Traders focus on core CPI and on the gap between the result and the forecast.",
+  },
+  cal_nfp: {
+    title: "US jobs report (Nonfarm payrolls)",
+    what: "Released on the first Friday of most months at 08:30 New York time: how many jobs the US economy added, the unemployment rate and wage growth.",
+    read: "A very strong labour market can keep rates higher for longer; a sharp slowdown raises fears of recession. Both can move crypto, and the reaction is often fast and noisy.",
+  },
+  cal_pce: {
+    title: "US PCE inflation",
+    what: "Personal Consumption Expenditures prices, published by the Bureau of Economic Analysis. It is the inflation measure the Fed itself targets at 2%.",
+    read: "It usually arrives after CPI, so markets can partly anticipate it. A surprise in core PCE still moves rate expectations.",
+  },
+  cal_gdp: {
+    title: "US GDP",
+    what: "The growth of the US economy over a quarter, published in three rounds: an advance estimate about a month after the quarter, then second and third estimates.",
+    read: "The advance estimate moves markets most. Later revisions rarely do unless they change the picture a lot.",
+  },
+  cal_hicp: {
+    title: "Euro area inflation (flash)",
+    what: "Eurostat's first estimate of consumer price inflation for the euro area, published at 11:00 Frankfurt time around the turn of each month.",
+    read: "It shapes expectations for the next ECB decision and moves EUR. Check it if you trade BTC/EUR or hold euros.",
+  },
+  cal_expiry: {
+    title: "Options expiry",
+    what: "Bitcoin and Ether options on Deribit, the largest crypto options exchange, expire on the last Friday of each month at 08:00 UTC. Quarterly expiries (March, June, September, December) are the largest.",
+    read: "Large open positions near one price can pull the market toward it before expiry ('max pain'), and volatility can change once the options are gone. The effect is real but unreliable.",
+  },
+  news: {
+    title: "News feed",
+    what: "Recent headlines from central banks (Fed, ECB) and crypto news sites, newest first. Each headline links to the original article.",
+    read: "Headlines explain moves; they rarely predict them. When price jumps, check the feed and the calendar to see whether there was a reason or just thin liquidity.",
+    mistake: "Trading on a headline before reading it. Titles are written to be clicked, and the market has often reacted before you see it.",
+  },
   coach: {
     title: "Coach",
     what: "Rules that look for behaviour patterns in your closed trades: holding losers too long, chasing overbought moves, fighting the trend.",
