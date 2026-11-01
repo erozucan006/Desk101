@@ -389,3 +389,27 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 .wl-search li.hi { background: var(--line); }
 .wl-search li .plus { color: var(--up); font-weight: 600; }
 .wl-search .note { margin: 6px 0 0; }
+
+/* release marker popup on the chart */
+.chart-canvas.on-ev { cursor: pointer; }
+.ev-pop { position: absolute; z-index: 5; top: 52px; left: clamp(8px, calc(var(--ev-x) - 170px), calc(100% - 348px)); width: 340px; max-width: calc(100% - 16px); max-height: calc(100% - 56px); overflow-y: auto;
+  background: var(--panel, #151a21); border: 1px solid rgba(160,139,255,.55); border-radius: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.45); font-size: 13px; }
+.evc { padding: 10px 12px 12px; }
+.evc-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.evc-head .x { font-size: 20px; }
+.evc-tabs { margin-top: 8px; }
+.evc-sec { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.evc-lab { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); margin-bottom: 6px; font-weight: 600; }
+.evc-lab .dim { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.evc-res { list-style: none; margin: 0; padding: 0; }
+.evc-res li { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.evc-res li > span:first-child { color: var(--dim); }
+.evc-moves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.evc-moves > div { display: flex; flex-direction: column; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-variant-numeric: tabular-nums; }
+.evc-moves b { font-size: 15px; }
+.evc-x { font-size: 11px; color: var(--dim); }
+.evc-x.big { color: #a08bff; font-weight: 600; }
+.evc-read { margin: 8px 0 6px; line-height: 1.45; }
+.evc-learn { margin-top: 10px; background: none; border: 0; padding: 0; color: #a08bff; font: inherit; cursor: pointer; }
+.evc-learn:hover { text-decoration: underline; }
+@media (max-width: 700px) { .ev-pop { left: 8px; right: 8px; width: auto; top: 84px; } }

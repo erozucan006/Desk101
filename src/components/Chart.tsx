@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import type { Candle } from "../lib/types";
 import type { JournalTrade } from "../lib/journal";
 import { ema, lastValue, rsi } from "../lib/indicators";
@@ -15,9 +15,12 @@ type Props = {
   orders?: ChartOrder[]; // resting paper orders for this symbol
   events?: ChartEvent[]; // macro releases to mark on the time axis
   empty: string;
+  /** Content of the popup shown when a release marker is clicked. */
+  renderEvent?: (ids: string[], close: () => void) => ReactNode;
 };
 
-export type ChartEvent = { t: number; label: string };
+export type ChartEvent = { t: number; label: string; id: string };
+type EvHit = { x: number; xs: number[]; lx: number; w: number; ids: string[] };
 export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" | "sl" | "tp" };
 
 const C = {
@@ -26,10 +29,12 @@ const C = {
 };
 const MIN_VISIBLE = 20;
 const DEFAULT_VISIBLE = 150;
+/** Default zoom: 150 candles on a desktop, fewer on a phone so candles and release markers stay readable. */
+const defaultCount = (w?: number) => (w ? Math.max(40, Math.min(DEFAULT_VISIBLE, Math.round((w - PAD_L - PAD_R) / 5))) : DEFAULT_VISIBLE);
 const PAD_L = 8, PAD_R = 78, PAD_B = 22, PAD_T = 10;
 
 /** Geometry of the last paint, used by the mouse handlers. */
-type Layout = { plotW: number; step: number; from: number; cnt: number; n: number; priceTop: number; priceH: number; top: number; bot: number; H: number };
+type Layout = { plotW: number; step: number; from: number; cnt: number; n: number; priceTop: number; priceH: number; top: number; bot: number; H: number; ev: EvHit[]; evY: number };
 
 /** A "nice" axis step (1, 2, 2.5, 5 × 10^k) for about `target` ticks. */
 export function niceStep(range: number, target = 6): number {
@@ -58,16 +63,18 @@ function fullTime(t: number, tf: string) {
   return tf === "1D" || tf === "1W" ? date : `${date} ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, orders = [], events = [], empty }: Props) {
+export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, orders = [], events = [], empty, renderEvent }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const layout = useRef<Layout | null>(null);
   const drag = useRef<{ x: number; end: number; moved: boolean } | null>(null);
   const pts = useRef(new Map<number, { x: number; y: number }>()); // active pointers (fingers)
   const pinch = useRef<{ d0: number; cnt0: number; anchor: number; f: number } | null>(null);
-  const [count, setCount] = useState(DEFAULT_VISIBLE);
+  const [count, setCount] = useState(() => defaultCount(typeof window !== "undefined" ? Math.min(window.innerWidth, 1200) : undefined));
   const [end, setEnd] = useState(0);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [openEv, setOpenEv] = useState<{ ids: string[]; x: number } | null>(null);
+  const [overEv, setOverEv] = useState(false);
 
   const closes = useMemo(() => candles.map((c) => c.c), [candles]);
   const e9 = useMemo(() => ema(closes, 9), [closes]);
@@ -79,7 +86,17 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
   useEffect(() => { live.set({ rsi: lastValue(rs), ema9: lastValue(e9), ema21: lastValue(e21) }); }, [rs, e9, e21]);
 
   // New pair or timeframe: back to the default view at the latest candle.
-  useEffect(() => { setCount(DEFAULT_VISIBLE); setEnd(0); setHover(null); }, [viewKey]);
+  useEffect(() => { setCount(defaultCount(ref.current?.clientWidth)); setEnd(0); setHover(null); setOpenEv(null); }, [viewKey]);
+
+  /** Release marker under a point (its label at the top, or near its line). */
+  const evAt = (p: { x: number; y: number }) => {
+    const L = layout.current; if (!L || !renderEvent) return null;
+    // Labels can overlap when releases are close together: merge everything under the point.
+    const pad = 6; // generous for fingers
+    const h = L.ev.find((h) => p.y >= L.evY - pad && p.y <= L.evY + 14 + pad && p.x >= h.lx - pad && p.x <= h.lx + h.w + pad) ??
+      L.ev.find((h) => h.xs.some((x) => Math.abs(p.x - x) <= 4) && p.y > L.evY && p.y < L.H - PAD_B);
+    return h ? { x: h.x, ids: h.ids } : null;
+  };
 
   // When scrolled back in history, keep the same candles in view as new ones arrive.
   const prevN = useRef(n);
@@ -99,12 +116,12 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const draw = () => {
-      layout.current = paint(cv, candles, win.from, win.to, e9, e21, rs, tf, showEma, showRsi, positions, orders, events, empty, hover && !dragging ? hover : null);
+      layout.current = paint(cv, candles, win.from, win.to, e9, e21, rs, tf, showEma, showRsi, positions, orders, events, empty, hover && !dragging ? hover : null, openEv?.ids ?? null);
     };
     draw();
     const ro = new ResizeObserver(draw); ro.observe(cv);
     return () => ro.disconnect();
-  }, [candles, win.from, win.to, e9, e21, rs, tf, showEma, showRsi, positions, orders, events, empty, hover, dragging]);
+  }, [candles, win.from, win.to, e9, e21, rs, tf, showEma, showRsi, positions, orders, events, empty, hover, dragging, openEv]);
 
   // Wheel: zoom around the cursor; horizontal scroll pans. Registered non-passive to stop page scroll.
   useEffect(() => {
@@ -150,7 +167,7 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
 
   return (
     <>
-      <canvas ref={ref} className={`chart-canvas ${dragging ? "grabbing" : ""}`} aria-label="Price chart. Scroll or pinch to zoom, drag to move through history." role="img"
+      <canvas ref={ref} className={`chart-canvas ${dragging ? "grabbing" : overEv ? "on-ev" : ""}`} aria-label="Price chart. Scroll or pinch to zoom, drag to move through history." role="img"
         onPointerDown={(ev) => {
           if (ev.pointerType === "mouse" && ev.button !== 0) return;
           ev.currentTarget.setPointerCapture(ev.pointerId);
@@ -187,7 +204,7 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
             if (dr.moved) setEnd(viewWindow(L.n, L.cnt, dr.end + Math.round(dx / Math.max(2, L.step))).end);
             return;
           }
-          if (ev.pointerType === "mouse") setHover(local(ev));
+          if (ev.pointerType === "mouse") { const p = local(ev); setHover(p); setOverEv(!!evAt(p)); }
         }}
         onPointerUp={(ev) => {
           const wasPinch = !!pinch.current;
@@ -202,12 +219,15 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
           }
           const moved = drag.current?.moved;
           drag.current = null; setDragging(false);
-          if (moved) ev.preventDefault();
-          else if (ev.pointerType !== "mouse") setHover(local(ev)); // tap shows the crosshair and readout
+          if (moved) { ev.preventDefault(); return; }
+          const p = local(ev), hit = evAt(p);
+          if (hit) { setOpenEv({ ids: hit.ids, x: hit.x }); return; }
+          if (openEv) setOpenEv(null);
+          if (ev.pointerType !== "mouse") setHover(p); // tap shows the crosshair and readout
         }}
         onPointerCancel={(ev) => { pts.current.delete(ev.pointerId); pinch.current = null; drag.current = null; setDragging(false); }}
         onPointerLeave={(ev) => { if (ev.pointerType === "mouse" && !drag.current) setHover(null); }}
-        onDoubleClick={() => { setCount(DEFAULT_VISIBLE); setEnd(0); }}
+        onDoubleClick={() => { setCount(defaultCount(ref.current?.clientWidth)); setEnd(0); }}
       />
       {hc && (
         <div className="ohlc" aria-live="off">
@@ -222,9 +242,14 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
         {win.end > 0 && <button className="latest" onClick={() => setEnd(0)} title="Jump to the latest candle">Latest →</button>}
         <button onClick={() => zoom(1.4)} title="Zoom out (or scroll down)" aria-label="Zoom out">−</button>
         <button onClick={() => zoom(1 / 1.4)} title="Zoom in (or scroll up)" aria-label="Zoom in">+</button>
-        <button onClick={() => { setCount(DEFAULT_VISIBLE); setEnd(0); }} title="Reset view (or double-click the chart)" aria-label="Reset view">⟲</button>
+        <button onClick={() => { setCount(defaultCount(ref.current?.clientWidth)); setEnd(0); }} title="Reset view (or double-click the chart)" aria-label="Reset view">⟲</button>
         <span className="dim">{win.cnt}/{n}</span>
       </div>
+      {openEv && renderEvent && (
+        <div className="ev-pop" role="dialog" aria-label="Release and market reaction" style={{ ["--ev-x" as string]: `${openEv.x}px` }} onPointerDown={(e) => e.stopPropagation()}>
+          {renderEvent(openEv.ids, () => setOpenEv(null))}
+        </div>
+      )}
       {atStart && <div className="chart-hint">{tf === "1W" ? "Start of the history Kraken provides for this pair." : `Start of available history for ${tf}. Switch to a higher timeframe to see further back.`}</div>}
     </>
   );
@@ -232,7 +257,7 @@ export function Chart({ candles, tf, viewKey, showEma, showRsi, positions, order
 
 function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E9: (number | null)[], E21: (number | null)[], RS: (number | null)[],
   tf: string, showEma: boolean, showRsi: boolean, positions: JournalTrade[], orders: ChartOrder[], events: ChartEvent[], empty: string,
-  hover: { x: number; y: number } | null): Layout | null {
+  hover: { x: number; y: number } | null, selEv: string[] | null): Layout | null {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
   cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
   const ctx = cv.getContext("2d")!;
@@ -278,22 +303,39 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   }
   // macro events
   const span = all.length > 1 ? all[1].t - all[0].t : 3600_000;
-  const evX = new Map<number, string[]>();
+  const evX = new Map<number, { labels: string[]; ids: string[] }>();
+  const evHits: EvHit[] = [];
   // Markers only make sense when candles are wide enough to tell releases apart.
   if (tf !== "1W" && step >= 4) events.forEach((e) => {
     if (e.t < cs[0].t || e.t >= cs[n - 1].t + span) return;
     const i = Math.min(n - 1, Math.floor((e.t - cs[0].t) / span));
-    evX.set(i, [...(evX.get(i) ?? []), e.label]);
+    const g = evX.get(i) ?? { labels: [], ids: [] };
+    g.labels.push(e.label); g.ids.push(e.id); evX.set(i, g);
   });
   ctx.font = "600 10px 'IBM Plex Sans', system-ui, sans-serif";
-  evX.forEach((labels, i) => {
-    const x = Math.round(X(i)) + 0.5, lab = [...new Set(labels)].join(" · "), w = ctx.measureText(lab).width + 8;
-    ctx.strokeStyle = "rgba(160,139,255,.45)"; ctx.setLineDash([2, 3]);
-    ctx.beginPath(); ctx.moveTo(x, priceTop + 14); ctx.lineTo(x, volBase); ctx.stroke(); ctx.setLineDash([]);
-    if (step * every < w && labels.length === 1 && i % 2) return; // crowded: skip some labels, keep the lines
-    const lx = Math.min(Math.max(PAD_L, x - w / 2), PAD_L + plotW - w);
-    ctx.fillStyle = "rgba(160,139,255,.16)"; ctx.fillRect(lx, priceTop, w, 14);
-    ctx.fillStyle = C.rsi; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(lab, lx + w / 2, priceTop + 7);
+  // On narrow screens the OHLC readout wraps to two lines; keep the labels below it.
+  const evY = priceTop + (W < 600 ? 26 : 0);
+  const groups = [...evX.entries()].sort((a, b) => a[0] - b[0]).map(([i, g]) => ({ x: Math.round(X(i)) + 0.5, labels: g.labels, ids: g.ids }));
+  // Releases close together share one label ("PCE · ECB · GDP") instead of overprinting.
+  type Cl = { xs: number[]; labels: string[]; ids: string[]; lx: number; w: number };
+  const box = (c: Omit<Cl, "lx" | "w">) => {
+    const w = ctx.measureText([...new Set(c.labels)].join(" · ")).width + 8, cx = (c.xs[0] + c.xs[c.xs.length - 1]) / 2;
+    return { ...c, w, lx: Math.min(Math.max(PAD_L, cx - w / 2), PAD_L + plotW - w) };
+  };
+  const clusters: Cl[] = [];
+  for (const g of groups) {
+    const c = box({ xs: [g.x], labels: g.labels, ids: g.ids }), prev = clusters[clusters.length - 1];
+    if (prev && c.lx < prev.lx + prev.w + 4) clusters[clusters.length - 1] = box({ xs: [...prev.xs, g.x], labels: [...prev.labels, ...g.labels], ids: [...prev.ids, ...g.ids] });
+    else clusters.push(c);
+  }
+  clusters.forEach((c) => {
+    const sel = selEv != null && c.ids.some((id) => selEv.includes(id));
+    evHits.push({ x: (c.xs[0] + c.xs[c.xs.length - 1]) / 2, xs: c.xs, lx: c.lx, w: c.w, ids: [...new Set(c.ids)] });
+    ctx.strokeStyle = sel ? "rgba(160,139,255,.95)" : "rgba(160,139,255,.45)"; ctx.setLineDash(sel ? [] : [2, 3]);
+    c.xs.forEach((x) => { ctx.beginPath(); ctx.moveTo(x, evY + 14); ctx.lineTo(x, volBase); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ctx.fillStyle = sel ? "rgba(160,139,255,.5)" : "rgba(160,139,255,.16)"; ctx.fillRect(c.lx, evY, c.w, 14);
+    ctx.fillStyle = C.rsi; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText([...new Set(c.labels)].join(" · "), c.lx + c.w / 2, evY + 7);
   });
   ctx.font = FONT;
   // candles + volume
@@ -382,5 +424,5 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
     ctx.fillStyle = "#2c3542"; ctx.fillRect(tx, H - PAD_B + 2, tw, 18);
     ctx.fillStyle = "#e6eaf0"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(tl, tx + tw / 2, H - PAD_B + 5);
   }
-  return { plotW, step, from, cnt: n, n: all.length, priceTop, priceH, top, bot, H };
+  return { plotW, step, from, cnt: n, n: all.length, priceTop, priceH, top, bot, H, ev: evHits, evY };
 }

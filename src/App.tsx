@@ -18,6 +18,7 @@ import { OrderBook, PanelHead, Scanner, Tape, Watchlist } from "./components/Pan
 import { JournalPanel } from "./components/JournalPanel";
 import { LearnDrawer } from "./components/LearnDrawer";
 import { usePairs } from "./lib/pairs";
+import { EventCard } from "./components/EventCard";
 
 const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -63,7 +64,7 @@ export default function App() {
 
   const now = useNow(30_000);
   const SHORT = { fomc: "FED", ecb: "ECB", cpi: "CPI", nfp: "NFP", pce: "PCE", gdp: "GDP", hicp: "EU CPI", expiry: "EXPIRY" } as const;
-  const chartEvents: ChartEvent[] = useMemo(() => EVENTS.filter((e) => e.impact === "high" && e.at <= now).map((e) => ({ t: e.at, label: SHORT[e.kind] })), [Math.floor(now / 600_000)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const chartEvents: ChartEvent[] = useMemo(() => EVENTS.filter((e) => e.impact === "high" && e.at <= now).map((e) => ({ t: e.at, label: SHORT[e.kind], id: e.id })), [Math.floor(now / 600_000)]); // eslint-disable-line react-hooks/exhaustive-deps
   const soon = nextEvent(now, { impact: "high" });
   const eventWarning = soon && soon.at - now < 30 * 60_000 ? `${soon.title} in ${countdown(soon.at - now)}: spreads can widen and price can jump around the release.` : undefined;
 
@@ -233,7 +234,7 @@ export default function App() {
           <Legend show={ind} />
           <div className="chartwrap" data-learn="candles">
             <Chart candles={candles} tf={tf} viewKey={`${symbol}|${tf}`} showEma={ind.ema} showRsi={ind.rsi}
-              positions={trades.filter((x) => x.symbol === symbol)} orders={chartOrders} events={chartEvents} empty={chartErr ? `Chart unavailable: ${chartErr}` : "Loading candles…"} />
+              positions={trades.filter((x) => x.symbol === symbol)} orders={chartOrders} events={chartEvents} renderEvent={(ids, close) => <EventCard ids={ids} candles={candles} tf={tf} base={sel} onClose={close} onLearn={setLearnKey} />} empty={chartErr ? `Chart unavailable: ${chartErr}` : "Loading candles…"} />
           </div>
         </section>
 
@@ -256,7 +257,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.10 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.11 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
