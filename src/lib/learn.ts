@@ -168,6 +168,51 @@ export const LEARN: Record<string, LearnEntry> = {
     what: "A label for why you took the trade: breakout, pullback, reversal and so on.",
     read: "Tagging every trade lets the coach show which of your setups actually make money.",
   },
+  paper_account: {
+    title: "Paper account",
+    what: "A practice account with 10,000 in virtual money. Orders fill against real Kraken prices, with real-world fees, but no money is at risk.",
+    read: "Treat it like real money. The habits you build here (sizing, stops, patience) carry over; reckless paper trading teaches nothing.",
+    mistake: "Going all-in because it is not real. Size each trade as if it were your own savings.",
+  },
+  equity: {
+    title: "Equity",
+    what: "What the account is worth right now: cash plus the current value of every open position.",
+    read: "This is the number that matters. Compare it with the 10,000 starting balance to see how you are doing overall.",
+  },
+  buying_power: {
+    title: "Buying power",
+    what: "How much more you can put into positions. Paper accounts use no leverage, so open positions can never be worth more than your equity.",
+    read: "Leverage multiplies both gains and losses. Learn to trade profitably without it before considering it anywhere else.",
+  },
+  order_type: {
+    title: "Order types",
+    what: "Market: fill now at the best available price. Limit: fill only at your price or better, and wait in the book until then. Stop: do nothing until the price reaches a trigger, then fill at market.",
+    read: "Market orders buy certainty of execution and pay the spread and the higher fee. Limit orders get your price but may never fill. Stops are mostly used to get out when you are wrong.",
+    mistake: "Using a stop order to buy a dip. A buy stop triggers when price rises to it; to buy lower, use a buy limit.",
+  },
+  fees: {
+    title: "Trading fees",
+    what: "The exchange charges a percentage of each trade. Desk101 uses Kraken Pro's entry tier: 0.40% for taker orders (market, stops, limits that fill immediately) and 0.25% for maker orders (limits that rest in the book first).",
+    read: "A round trip with market orders costs about 0.8% plus the spread. A trade has to move more than that just to break even.",
+    mistake: "Trading very often for small moves. Fees quietly eat most of the profit.",
+  },
+  bracket: {
+    title: "Exit plan (stop-loss and take-profit)",
+    what: "Two orders attached to your entry. The stop-loss closes the position if price moves against you; the take-profit closes it at your target. When one fills, the other is cancelled (one-cancels-the-other).",
+    read: "Deciding your exits before entering removes most emotional decisions later. Professionals know where they are wrong before they get in.",
+    mistake: "Moving the stop further away when price approaches it. That turns a small planned loss into a large unplanned one.",
+  },
+  risk_reward: {
+    title: "Risk and reward",
+    what: "Risk is what you lose if the stop-loss fills, including fees. Reward is what you gain at the take-profit. The ratio between them is often written as R, e.g. 2R means the target is twice the risk.",
+    read: "Many traders risk 1% or less of equity per trade. With a 2R target you can be wrong more than half the time and still grow the account.",
+    now: (c) => c.ticker ? `Example: risking 1% of a 10,000 account is 100. If your stop is 2% below entry, the position can be about 5,000 in size.` : null,
+  },
+  avg_entry: {
+    title: "Average entry",
+    what: "When you add to a position, the entry becomes the size-weighted average of all your buys (or sells, for a short).",
+    read: "Adding to a losing position lowers the average but increases the risk. Be deliberate about it.",
+  },
   coach: {
     title: "Coach",
     what: "Rules that look for behaviour patterns in your closed trades: holding losers too long, chasing overbought moves, fighting the trend.",

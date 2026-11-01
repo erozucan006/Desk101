@@ -11,15 +11,18 @@ type Props = {
   showEma: boolean;
   showRsi: boolean;
   positions: JournalTrade[]; // journal trades for this symbol
+  orders?: ChartOrder[]; // resting paper orders for this symbol
   empty: string;
 };
+
+export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" | "sl" | "tp" };
 
 const C = {
   line: "#1f2a3c", dim: "#6f7f99", up: "#2ec27e", down: "#ff5a5f", amber: "#ffb02e",
   ink: "#0b0f17", panel: "#111826", ema9: "#7aa7ff", ema21: "#c792ea",
 };
 
-export function Chart({ candles, tf, showEma, showRsi, positions, empty }: Props) {
+export function Chart({ candles, tf, showEma, showRsi, positions, orders = [], empty }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const closes = useMemo(() => candles.map((c) => c.c), [candles]);
   const e9 = useMemo(() => ema(closes, 9), [closes]);
@@ -32,17 +35,17 @@ export function Chart({ candles, tf, showEma, showRsi, positions, empty }: Props
 
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
-    const draw = () => paint(cv, candles.slice(-120), e9.slice(-120), e21.slice(-120), rs.slice(-120), tf, showEma, showRsi, positions, empty);
+    const draw = () => paint(cv, candles.slice(-120), e9.slice(-120), e21.slice(-120), rs.slice(-120), tf, showEma, showRsi, positions, orders, empty);
     draw();
     const ro = new ResizeObserver(draw); ro.observe(cv);
     return () => ro.disconnect();
-  }, [candles, e9, e21, rs, tf, showEma, showRsi, positions, empty]);
+  }, [candles, e9, e21, rs, tf, showEma, showRsi, positions, orders, empty]);
 
   return <canvas ref={ref} className="chart-canvas" aria-label="Price chart" role="img" />;
 }
 
 function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: (number | null)[], rs: (number | null)[],
-  tf: string, showEma: boolean, showRsi: boolean, positions: JournalTrade[], empty: string) {
+  tf: string, showEma: boolean, showRsi: boolean, positions: JournalTrade[], orders: ChartOrder[], empty: string) {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
   cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
   const ctx = cv.getContext("2d")!;
@@ -54,7 +57,11 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
   const volH = (H - padB - rsiH - gap) * 0.16;
   const plotW = W - padR - 8, priceH = H - padB - rsiH - gap - volH - padT - 6;
   const volBase = padT + priceH + 6 + volH;
-  const hi = Math.max(...cs.map((c) => c.h)), lo = Math.min(...cs.map((c) => c.l));
+  let hi = Math.max(...cs.map((c) => c.h)), lo = Math.min(...cs.map((c) => c.l));
+  // stretch the range to show nearby order and entry levels (within 12% of the last close)
+  const lastC = cs[cs.length - 1].c;
+  [...orders.map((o) => o.price), ...positions.filter((t) => t.status === "open").map((t) => t.entry)]
+    .filter((p) => Math.abs(p / lastC - 1) < 0.12).forEach((p) => { hi = Math.max(hi, p); lo = Math.min(lo, p); });
   const pad = (hi - lo) * 0.06 || hi * 0.001;
   const top = hi + pad, bot = lo - pad, y = (p: number) => padT + ((top - p) / (top - bot)) * priceH;
   const n = cs.length, step = plotW / n, bw = Math.max(1, step * 0.62), X = (i: number) => 8 + i * step + step / 2;
@@ -123,6 +130,17 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
       const xi = idxAt(t.exitAt);
       if (xi >= 0) { ctx.strokeStyle = C.amber; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X(xi), Math.max(padT + 5, Math.min(padT + priceH - 5, y(t.exit))), 4.5, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
     }
+  });
+  // resting orders
+  const OC = { limit: C.amber, stop: "#7aa7ff", sl: C.down, tp: C.up };
+  orders.forEach((o) => {
+    if (o.price > top || o.price < bot) return;
+    const oy = Math.round(y(o.price)) + 0.5, col = OC[o.kind];
+    ctx.strokeStyle = col; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(8, oy); ctx.lineTo(8 + plotW, oy); ctx.stroke(); ctx.setLineDash([]);
+    const lab = `${o.label} ${price(o.price)}`, w = ctx.measureText(lab).width + 10;
+    const lx = 8 + plotW - w - 4;
+    ctx.fillStyle = C.panel; ctx.fillRect(lx, oy - 9, w, 18); ctx.strokeStyle = col; ctx.strokeRect(lx + 0.5, oy - 8.5, w - 1, 17);
+    ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(lab, lx + 5, oy);
   });
   // last price tag
   const lc = cs[n - 1], ly = Math.round(y(lc.c)) + 0.5, lcol = lc.c >= lc.o ? C.up : C.down;

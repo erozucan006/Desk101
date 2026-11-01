@@ -18,6 +18,7 @@ export type JournalTrade = {
   status: "open" | "closed";
   exit?: number;
   exitAt?: string;
+  source?: "manual" | "paper";
   // market context captured at entry, used by the coach
   ctx?: { rsi?: number | null; trend?: "up" | "down" | null; timeframe?: string };
 };
@@ -48,6 +49,13 @@ export const journal = {
     commit(trades.map((t) => (t.id === id ? { ...t, status: "closed", exit, exitAt: new Date().toISOString() } : t)));
   },
   remove(id: string) { commit(trades.filter((t) => t.id !== id)); },
+  get(id: string) { return trades.find((t) => t.id === id); },
+  update(id: string, patch: Partial<JournalTrade>) { commit(trades.map((t) => (t.id === id ? { ...t, ...patch } : t))); },
+  add(t: Omit<JournalTrade, "id">) {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    commit([...trades, { ...t, id }]);
+    return id;
+  },
   replaceAll(next: JournalTrade[]) { commit(next); },
 };
 

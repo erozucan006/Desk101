@@ -4,10 +4,13 @@ import { KrakenFeed } from "./lib/kraken";
 import { DemoFeed } from "./lib/demo";
 import type { Feed } from "./lib/types";
 import { useCandles, useFeedStatus, useJournal, useLive, useStored, useTickers } from "./lib/hooks";
-import { ccySymbol, compact, pct, price } from "./lib/format";
+import { ccySymbol, compact, money, pct, price } from "./lib/format";
 import { live } from "./lib/live";
-import { journal } from "./lib/journal";
-import { Chart } from "./components/Chart";
+import { Chart, type ChartOrder } from "./components/Chart";
+import { OrderTicket } from "./components/OrderTicket";
+import { AccountPanel } from "./components/AccountPanel";
+import { paper, usePaper } from "./lib/paperStore";
+import type { OrderInput } from "./lib/paper";
 import { OrderBook, PanelHead, Scanner, Sessions, Tape, Watchlist } from "./components/Panels";
 import { JournalPanel } from "./components/JournalPanel";
 import { LearnDrawer } from "./components/LearnDrawer";
@@ -34,19 +37,53 @@ export default function App() {
   const qs = ccySymbol(quote);
   const minutes = TIMEFRAMES.find((t) => t.label === tf)?.minutes ?? 60;
   const trades = useJournal();
+  const acc = usePaper();
   const journalSyms = trades.filter((t) => t.status === "open").map((t) => t.symbol.split("/")[0]);
   const universe = useMemo(() => [...new Set([...UNIVERSE, ...watch, ...journalSyms, sel])], [watch, journalSyms.join(","), sel]); // eslint-disable-line react-hooks/exhaustive-deps
   const allSymbols = useMemo(() => {
     const set = new Set(universe.map((b) => `${b}/${quote}`));
     trades.filter((t) => t.status === "open").forEach((t) => set.add(t.symbol));
+    Object.keys(acc.positions).forEach((s) => set.add(s));
+    acc.orders.forEach((o) => set.add(o.symbol));
     return [...set];
-  }, [universe, quote, trades]);
+  }, [universe, quote, trades, acc]);
   const { tickers, missing } = useTickers(feed, allSymbols);
   const t = tickers[symbol];
   const { candles, error: chartErr } = useCandles(feed, symbol, minutes);
+  const prices = useMemo(() => Object.fromEntries(Object.entries(tickers).map(([k, v]) => [k, v.last])), [tickers]);
+
+  // Match resting paper orders against every quote update.
+  useEffect(() => {
+    for (const s of new Set(paper.get().orders.map((o) => o.symbol))) if (tickers[s]) paper.tick(tickers[s], tickers);
+  }, [tickers]);
+
+  const chartOrders: ChartOrder[] = useMemo(() => acc.orders.filter((o) => o.symbol === symbol).map((o) => ({
+    price: o.price,
+    kind: o.role === "sl" ? "sl" : o.role === "tp" ? "tp" : o.type,
+    label: o.role === "sl" ? "SL" : o.role === "tp" ? "TP" : `${o.side === "buy" ? "BUY" : "SELL"} ${o.type === "limit" ? "LMT" : "STP"} ${o.qty}`,
+  })), [acc.orders, symbol]);
 
   useEffect(() => { live.set({ symbol: sel, quote, timeframe: tf, ticker: t }); }, [sel, quote, tf, t]);
   useEffect(() => { document.title = t ? `${sel} ${price(t.last)} · ${APP_NAME}` : APP_NAME; }, [t, sel]);
+
+  useEffect(() => paper.onNotice((m) => say(m, "ok")), [say]);
+
+  function placeOrder(input: OrderInput): boolean {
+    const r = paper.place(input, tickers);
+    if (r.error) { say(r.error, "err"); return false; }
+    const f = r.fills[0];
+    const what = f ? `Filled: ${f.side} ${f.qty} ${f.symbol} @ ${price(f.price)} (fee ${ccySymbol(input.symbol.split("/")[1])}${f.fee.toFixed(2)}).`
+      : `Order placed: ${input.side} ${input.qty} ${input.symbol} ${input.type} @ ${price(input.price)}.`;
+    const exits = input.bracket && f ? " Exit orders are live." : "";
+    say([what + exits, ...r.notices].join(" "), "ok");
+    return true;
+  }
+  function closePaper(sym: string) {
+    const r = paper.close(sym, tickers);
+    if (r.error) return say(r.error, "err");
+    const f = r.fills[0];
+    say(`Closed ${sym} @ ${price(f.price)}. Realised ${money(f.realized - f.fee, ccySymbol(sym.split("/")[1]))} after this fee.`, "ok");
+  }
 
   const select = useCallback((b: string) => { setSel(b); say(`${b}/${quote} · ${tf}`); }, [quote, tf, say, setSel]);
   const add = (b: string) => { if (!watch.includes(b)) setWatch([...watch, b]); say(`${b} added to watchlist.`, "ok"); };
@@ -67,24 +104,22 @@ export default function App() {
     let m = s.match(/^(BUY|SELL|LONG|SHORT)\s+([A-Z0-9/]+)\s+([0-9.,]+)(?:\s*@\s*([0-9.,]+))?$/);
     if (m) {
       const b = strip(m[2]), sym = `${b}/${quote}`, q = parseFloat(m[3].replace(",", "."));
-      const p = m[4] ? parseFloat(m[4].replace(",", ".")) : tickers[sym]?.last;
-      if (!(q > 0)) return say("Quantity must be greater than zero.", "err");
-      if (!p) return say(`No live price for ${sym}. Add a price: ${m[1]} ${b} ${m[3]} @ 12345`, "err");
-      const side = m[1] === "BUY" || m[1] === "LONG" ? "long" : "short";
-      journal.open({ symbol: sym, side, qty: q, entry: p, fee: 0, setup: "Other", note: "", ctx: b === sel ? entryCtx() : undefined });
-      return say(`${side === "long" ? "Long" : "Short"} ${q} ${sym} @ ${price(p)} logged.`, "ok");
+      const side = m[1] === "BUY" || m[1] === "LONG" ? "buy" : "sell";
+      const lim = m[4] ? parseFloat(m[4].replace(",", ".")) : undefined;
+      placeOrder({ symbol: sym, side, type: lim ? "limit" : "market", qty: q, price: lim, meta: { setup: "Other", ctx: b === sel ? entryCtx() : undefined } });
+      return;
     }
-    m = s.match(/^CLOSE\s+([A-Z0-9/]+)(?:\s*@\s*([0-9.,]+))?$/);
+    m = s.match(/^CLOSE\s+([A-Z0-9/]+)$/);
     if (m) {
-      const b = strip(m[1]);
-      const os = trades.filter((x) => x.status === "open" && x.symbol.split("/")[0] === b);
-      if (!os.length) return say(`No open ${b} position.`, "err");
-      for (const o of os) {
-        const p = m[2] ? parseFloat(m[2].replace(",", ".")) : tickers[o.symbol]?.last;
-        if (!p) { say(`No live price for ${o.symbol}. Use CLOSE ${b} @ price.`, "err"); continue; }
-        journal.close(o.id, p);
-      }
-      return say(`${b} closed.`, "ok");
+      const sym = `${strip(m[1])}/${quote}`;
+      if (acc.positions[sym]) return closePaper(sym);
+      return say(`No open paper position in ${sym}.`, "err");
+    }
+    m = s.match(/^CANCEL(?:\s+([A-Z0-9/]+))?$/);
+    if (m) {
+      const b = m[1] && m[1] !== "ALL" ? strip(m[1]) : null;
+      paper.cancelAll(b ? `${b}/${quote}` : undefined);
+      return say(b ? `Cancelled open ${b}/${quote} orders.` : "Cancelled all open orders.", "ok");
     }
     const parts = s.split(/\s+/);
     const b = strip(parts[0]);
@@ -130,7 +165,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand"><b>{APP_NAME.split(" ").map((w) => w[0]).join("").slice(0, 3)}</b><span>{APP_NAME}</span></div>
         <label className="cmd" htmlFor="cmd"><span>&gt;</span>
-          <input id="cmd" ref={cmdRef} autoComplete="off" spellCheck={false} placeholder="BTC 4H · BUY ETH 0.5 · LEARN · HELP"
+          <input id="cmd" ref={cmdRef} autoComplete="off" spellCheck={false} placeholder="BTC 4H · BUY ETH 0.5 · CLOSE ETH · HELP"
             onKeyDown={(e) => { if (e.key === "Enter") { run(e.currentTarget.value); e.currentTarget.value = ""; } }} />
         </label>
         <div className="tb-right">
@@ -149,7 +184,7 @@ export default function App() {
         <section className="welcome">
           <div>
             <h1>{APP_TAGLINE}</h1>
-            <p>Live crypto markets with the explanations built in. Turn on <b>Learn</b> (or press <kbd>L</kbd>) and click any number to see what it measures and what it is saying right now. Log your trades in the journal and the coach will show you patterns in your own behaviour.</p>
+            <p>Live crypto markets with the explanations built in. Turn on <b>Learn</b> (or press <kbd>L</kbd>) and click any number to see what it measures and what it is saying right now. Practise with a <b>10,000 paper account</b> at real prices: every trade lands in your journal, and the coach shows you patterns in your own behaviour.</p>
           </div>
           <div className="welcome-actions">
             <button className="go" onClick={() => { setLearnOn(true); setWelcomed(true); }}>Start with Learn on</button>
@@ -183,12 +218,19 @@ export default function App() {
           <Legend show={ind} />
           <div className="chartwrap" data-learn="candles">
             <Chart candles={candles} tf={tf} showEma={ind.ema} showRsi={ind.rsi}
-              positions={trades.filter((x) => x.symbol === symbol)} empty={chartErr ? `Chart unavailable: ${chartErr}` : "Loading candles…"} />
+              positions={trades.filter((x) => x.symbol === symbol)} orders={chartOrders} empty={chartErr ? `Chart unavailable: ${chartErr}` : "Loading candles…"} />
           </div>
         </section>
 
-        <OrderBook feed={feed} symbol={symbol} />
+        <div className="rightcol">
+          <OrderTicket symbol={symbol} quote={quote} qs={qs} ticker={t} acc={acc} prices={prices} entryCtx={entryCtx} onPlace={placeOrder} onClosePosition={closePaper} />
+          <OrderBook feed={feed} symbol={symbol} />
+        </div>
       </main>
+
+      <AccountPanel acc={acc} quote={quote} qs={qs} prices={prices} onSelect={select}
+        onClose={closePaper} onCancel={(id) => { paper.cancel(id); say("Order cancelled.", "ok"); }}
+        onReset={() => { paper.reset(); say("Paper account reset to 10,000.", "ok"); }} />
 
       <section className="deck">
         <Scanner universe={UNIVERSE} quote={quote} tickers={tickers} watch={watch} onSelect={select} onAdd={add} />
@@ -196,10 +238,10 @@ export default function App() {
         <Sessions />
       </section>
 
-      <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} />
+      <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.1 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.2 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
       </footer>
 
@@ -214,8 +256,10 @@ export default function App() {
               <dt>ETH 4H</dt><dd>Symbol with timeframe (15M, 1H, 4H, 1D)</dd>
               <dt>SOL ADD · SOL DEL</dt><dd>Add to or remove from the watchlist</dd>
               <dt>USD · EUR</dt><dd>Switch the quote currency</dd>
-              <dt>BUY BTC 0.1 @ 77500</dt><dd>Log a long in the journal (SELL for a short; no @ uses the live price)</dd>
-              <dt>CLOSE BTC</dt><dd>Close open BTC positions at the live price</dd>
+              <dt>BUY BTC 0.1</dt><dd>Paper market order (SELL to sell or go short)</dd>
+              <dt>BUY BTC 0.1 @ 75000</dt><dd>Paper limit order at that price</dd>
+              <dt>CLOSE BTC</dt><dd>Close the paper BTC position at market</dd>
+              <dt>CANCEL BTC · CANCEL</dt><dd>Cancel open orders for one pair, or all</dd>
               <dt>LEARN</dt><dd>Toggle Learn mode (or press L)</dd>
             </dl>
             <p className="dim">Press <kbd>/</kbd> to jump to the command line, <kbd>Esc</kbd> to close panels.</p>

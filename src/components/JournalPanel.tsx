@@ -13,9 +13,10 @@ type Props = {
   quoteSym: string;
   entryCtx: () => JournalTrade["ctx"];
   say: (msg: string, tone?: "ok" | "err") => void;
+  onClosePaper: (symbol: string) => void;
 };
 
-export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, say }: Props) {
+export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, say, onClosePaper }: Props) {
   const [side, setSide] = useState<Side>("long");
   const [sym, setSym] = useState("");
   const [qty, setQty] = useState("");
@@ -101,7 +102,7 @@ export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, 
           {SETUPS.map((s) => <option key={s}>{s}</option>)}
         </select>
         <input id="j-note" aria-label="Note" placeholder="Why this trade? Where would you be wrong?" value={note} onChange={(e) => setNote(e.target.value)} maxLength={240} className="note-in" />
-        <button type="submit" className="go">Log position</button>
+        <button type="submit" className="ghost">Log outside trade</button>
       </form>
 
       <div className="jcols">
@@ -115,7 +116,7 @@ export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, 
                   const c = cur(t), p = pnl(t, c), pc = pnlPct(t, c);
                   return (
                     <tr key={t.id} title={t.note}>
-                      <td>{t.symbol}</td><td>{sideTag(t)}</td><td>{t.qty}</td><td>{price(t.entry)}</td><td>{price(c)}</td>
+                      <td>{t.symbol}{t.source === "paper" && <span className="tag">paper</span>}</td><td>{sideTag(t)}</td><td>{t.qty.toLocaleString("en-US", { maximumFractionDigits: 6 })}</td><td>{price(t.entry)}</td><td>{price(c)}</td>
                       <td className={cls(p)}>{money(p, curSym(t))}</td><td className={cls(pc)}>{pct(pc)}</td><td className="dim">{duration(t.entryAt)}</td>
                       <td>{closing?.id === t.id ? (
                         <span className="closebox">
@@ -125,13 +126,13 @@ export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, 
                         </span>
                       ) : (
                         <span className="closebox">
-                          <button onClick={() => setClosing({ id: t.id, px: c != null ? String(c) : "" })}>Close</button>
+                          <button onClick={() => (t.source === "paper" ? onClosePaper(t.symbol) : setClosing({ id: t.id, px: c != null ? String(c) : "" }))}>Close</button>
                           <button className={`x ${armed === t.id ? "armed" : ""}`} onClick={() => del(t.id)} title="Delete entry">{armed === t.id ? "delete?" : "×"}</button>
                         </span>
                       )}</td>
                     </tr>
                   );
-                }) : <tr><td colSpan={9} className="dim left">No open positions. Log one above or type <b>BUY BTC 0.1</b> in the command line.</td></tr>}
+                }) : <tr><td colSpan={9} className="dim left">No open positions. Place a paper trade with the order ticket, or log a trade you made elsewhere above.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -146,7 +147,7 @@ export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, 
                   const p = pnl(t, t.exit), pc = pnlPct(t, t.exit);
                   return (
                     <tr key={t.id} title={t.note}>
-                      <td>{t.symbol}</td><td>{sideTag(t)}</td><td>{price(t.entry)} → {price(t.exit)}</td>
+                      <td>{t.symbol}{t.source === "paper" && <span className="tag">paper</span>}</td><td>{sideTag(t)}</td><td>{price(t.entry)} → {price(t.exit)}</td>
                       <td className={cls(p)}>{money(p, curSym(t))}</td><td className={cls(pc)}>{pct(pc)}</td><td className="dim">{t.setup}</td>
                       <td><button className={`x ${armed === t.id ? "armed" : ""}`} onClick={() => del(t.id)} title="Delete entry">{armed === t.id ? "delete?" : "×"}</button></td>
                     </tr>
@@ -165,7 +166,7 @@ export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, 
           </div>
         </div>
       </div>
-      <p className="note">Your journal is stored in this browser only. Export CSV to keep a copy. Totals add up positions quoted in {quote}.</p>
+      <p className="note">Paper trades are logged here automatically. Use the form to log trades you made on a real exchange. Your journal is stored in this browser only; export CSV to keep a copy. Totals add up positions quoted in {quote}.</p>
     </section>
   );
 }
