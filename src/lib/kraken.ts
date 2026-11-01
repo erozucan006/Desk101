@@ -172,7 +172,7 @@ export class KrakenFeed implements Feed {
         const arr = s.candles!;
         const i = arr.findIndex((x) => x.t === c.t);
         if (i >= 0) arr[i] = c; else { arr.push(c); arr.sort((a, b) => a.t - b.t); }
-        if (arr.length > 400) arr.splice(0, arr.length - 400);
+        if (arr.length > 1000) arr.splice(0, arr.length - 1000);
       }
       // emit once per message per sub
       const seen = new Set<string>();
@@ -216,7 +216,7 @@ export class KrakenFeed implements Feed {
         .filter((c) => isFinite(c.t) && isFinite(c.c));
       const live = new Map((s.candles ?? []).map((c) => [c.t, c]));
       hist.forEach((c) => { if (!live.has(c.t)) live.set(c.t, c); }); // live candles win
-      s.candles = [...live.values()].sort((a, b) => a.t - b.t).slice(-400);
+      s.candles = [...live.values()].sort((a, b) => a.t - b.t).slice(-1000);
       this.emit(s, s.candles.slice());
     } catch { /* history is a nice-to-have; live candles still arrive */ }
   }

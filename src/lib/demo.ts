@@ -99,11 +99,11 @@ export class DemoFeed implements Feed {
     const vola = s.vola * Math.sqrt(minutes) * 0.7;
     // walk backwards from the current price so the series ends where the ticker is
     const closes: number[] = [s.price];
-    for (let i = 1; i < 200; i++) closes.unshift(closes[0] * (1 - (r() - 0.5) * 2 * vola + Math.sin(i / 23) * vola * 0.25));
+    for (let i = 1; i < 720; i++) closes.unshift(closes[0] * (1 - (r() - 0.5) * 2 * vola + Math.sin(i / 23) * vola * 0.25));
     const arr: Candle[] = closes.map((c, i) => {
       const o = i === 0 ? c * (1 + (r() - 0.5) * vola) : closes[i - 1];
       const h = Math.max(o, c) * (1 + r() * vola * 0.6), l = Math.min(o, c) * (1 - r() * vola * 0.6);
-      return { t: now - (199 - i) * ms, o, h, l, c, v: (s.vol / (1440 / minutes)) * (0.4 + r() * 1.2) };
+      return { t: now - (719 - i) * ms, o, h, l, c, v: (s.vol / (1440 / minutes)) * (0.4 + r() * 1.2) };
     });
     queueMicrotask(() => fn(arr.slice()));
     return this.every(1500, () => {
