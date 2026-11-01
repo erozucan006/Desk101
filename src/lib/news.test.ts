@@ -19,6 +19,20 @@ describe("RSS / Atom parsing", () => {
     expect(items[1].macro).toBe(false);
   });
 
+  it("drops sponsored posts and press releases from media feeds, tags tiers", () => {
+    const xml = `<rss><channel>
+      <item><title>Real story about Bitcoin</title><link>https://media.ex/news/real</link><pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate><category>Markets</category></item>
+      <item><title>XYZ token launches presale</title><link>https://media.ex/press-releases/xyz</link><pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate></item>
+      <item><title>Another launch</title><link>https://media.ex/news/b</link><pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate><category><![CDATA[Sponsored]]></category></item>
+      <item><title>Press Release: ABC wallet</title><link>https://media.ex/news/c</link><pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate></item>
+      <item><title>Price analysis: ETH</title><link>https://media.ex/price-analysis/eth</link><pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate></item>
+    </channel></rss>`;
+    const items = parseFeed(xml, { id: "m", name: "Media", cat: "crypto", tier: "media" });
+    expect(items.map((i: { title: string }) => i.title)).toEqual(["Real story about Bitcoin", "Price analysis: ETH"]);
+    expect(items.sponsored).toBe(3);
+    expect(items[0].tier).toBe("media");
+  });
+
   it("reads Atom entries with href links", () => {
     const xml = `<feed><entry><title type="html">ECB keeps rates unchanged</title><link rel="alternate" href="https://ecb.example/p1"/><updated>2026-10-29T13:15:00Z</updated></entry></feed>`;
     const items = parseFeed(xml, { id: "ecb", name: "ECB", cat: "macro" });

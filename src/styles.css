@@ -358,3 +358,8 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 .n-meta .tag { margin-left: 6px; }
 .tag.on { background: var(--accent-bg); color: var(--accent); }
 .foot a { color: var(--fg-2); }
+
+.badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 600; padding: 0 6px; border-radius: 3px; line-height: 17px; }
+.badge.official { background: var(--up-bg); color: var(--up); }
+.badge.media { background: var(--panel-3); color: var(--fg-2); font-weight: 500; }
+.news .note b { color: var(--fg-2); font-weight: 600; }

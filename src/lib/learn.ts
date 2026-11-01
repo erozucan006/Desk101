@@ -264,8 +264,8 @@ export const LEARN: Record<string, LearnEntry> = {
   news: {
     title: "News feed",
     what: "Recent headlines from central banks (Fed, ECB) and crypto news sites, newest first. Each headline links to the original article.",
-    read: "Headlines explain moves; they rarely predict them. When price jumps, check the feed and the calendar to see whether there was a reason or just thin liquidity.",
-    mistake: "Trading on a headline before reading it. Titles are written to be clicked, and the market has often reacted before you see it.",
+    read: "Official items are the central banks' own press releases. Media items are journalism: usually reliable, but sometimes wrong or later corrected. Desk101 does not check them, and it removes sponsored posts and paid press releases. When price jumps, check the feed and the calendar to see whether there was a reason or just thin liquidity.",
+    mistake: "Trading on a headline before reading it, or trusting a single outlet. False reports have moved crypto prices before and reversed minutes later. Wait for confirmation from the official source.",
   },
   coach: {
     title: "Coach",

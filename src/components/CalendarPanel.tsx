@@ -157,7 +157,7 @@ function EventDetail({ e, res, last, now, onLearn }: { e: EconEvent; res: EventR
         <button className="mini" onClick={() => onLearn(learnKey(e.kind))}>What is this?</button>
         <a className="link" href={e.source} target="_blank" rel="noopener noreferrer">Official source ↗</a>
       </div>
-      {e.at <= now && <p className="cd-fine">No forecast is shown: market consensus figures are licensed data. Compare with the previous value, and with how price reacted.</p>}
+      {e.at <= now && <p className="cd-fine">Figures are the latest official values and include later revisions, so they can differ slightly from the first number published on release day. No forecast is shown: market consensus figures are licensed data.</p>}
     </div>
   );
 }

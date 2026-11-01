@@ -2,15 +2,30 @@
 // Runs as a Vercel serverless function. Only titles, links, source and time are passed
 // through; readers click through to the publisher for the article itself.
 // Cached at Vercel's edge for 5 minutes so feeds are fetched rarely, whatever the traffic.
+//
+// Trust: "official" sources are the institutions' own press releases; "media" sources are
+// third-party journalism, shown as published and not verified by Desk101. Sponsored posts and
+// paid press releases are dropped before anything reaches the page.
 
 const FEEDS = [
-  { id: "fed", name: "Federal Reserve", cat: "macro", url: "https://www.federalreserve.gov/feeds/press_all.xml" },
-  { id: "ecb", name: "ECB", cat: "macro", url: "https://www.ecb.europa.eu/rss/press.html" },
-  { id: "coindesk", name: "CoinDesk", cat: "crypto", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
-  { id: "cointelegraph", name: "Cointelegraph", cat: "crypto", url: "https://cointelegraph.com/rss" },
-  { id: "decrypt", name: "Decrypt", cat: "crypto", url: "https://decrypt.co/feed" },
-  { id: "theblock", name: "The Block", cat: "crypto", url: "https://www.theblock.co/rss.xml" },
+  { id: "fed", name: "Federal Reserve", cat: "macro", tier: "official", url: "https://www.federalreserve.gov/feeds/press_all.xml" },
+  { id: "ecb", name: "ECB", cat: "macro", tier: "official", url: "https://www.ecb.europa.eu/rss/press.html" },
+  { id: "coindesk", name: "CoinDesk", cat: "crypto", tier: "media", url: "https://www.coindesk.com/arc/outboundfeeds/rss/" },
+  { id: "cointelegraph", name: "Cointelegraph", cat: "crypto", tier: "media", url: "https://cointelegraph.com/rss" },
+  { id: "decrypt", name: "Decrypt", cat: "crypto", tier: "media", url: "https://decrypt.co/feed" },
+  { id: "theblock", name: "The Block", cat: "crypto", tier: "media", url: "https://www.theblock.co/rss.xml" },
 ];
+
+// Paid or promotional content: matched on the item's categories, its URL path, or a title prefix.
+const SPONSORED_CAT = /\b(sponsored|press[\s-]?releases?|partner(ed)?[\s-]?(content|post)|paid[\s-]?(post|content)|advertorial|promoted|brand[\s-]?voice)\b/i;
+const SPONSORED_URL = /\/(sponsored|sponsored-content|press-releases?|partner-content|pr|paid-content|advertorial|promoted)(\/|$|-)/i;
+const SPONSORED_TITLE = /^\s*(\[?(sponsored|press release|pr|partner content|advertorial)\]?\s*[:|\-–])/i;
+
+export function isSponsored(title, link, categories) {
+  let path = "";
+  try { path = new URL(link).pathname; } catch { /* ignore */ }
+  return SPONSORED_TITLE.test(title) || SPONSORED_URL.test(path) || categories.some((c) => SPONSORED_CAT.test(c));
+}
 
 // Coins we tag headlines with, so the panel can filter to the pair on screen.
 const COINS = {
@@ -39,6 +54,7 @@ const tag = (block, name) => {
 
 export function parseFeed(xml, feed) {
   const items = [];
+  let sponsored = 0;
   const blocks = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) || xml.match(/<entry[\s>][\s\S]*?<\/entry>/gi) || [];
   for (const b of blocks.slice(0, 20)) {
     const title = tag(b, "title");
@@ -47,9 +63,12 @@ export function parseFeed(xml, feed) {
     const when = tag(b, "pubDate") || tag(b, "published") || tag(b, "updated") || tag(b, "dc:date");
     const ts = Date.parse(when);
     if (!title || !/^https?:\/\//.test(link) || !isFinite(ts)) continue;
+    const categories = [...b.matchAll(/<category(?:\s[^>]*)?>([\s\S]*?)<\/category>/gi)].map((m) => decode(m[1]));
+    if (feed.tier !== "official" && isSponsored(title, link, categories)) { sponsored++; continue; }
     const coins = Object.entries(COINS).filter(([, re]) => re.test(title)).map(([k]) => k);
-    items.push({ id: `${feed.id}:${link}`, title, link, source: feed.name, cat: feed.cat, macro: feed.cat === "macro" || MACRO.test(title), coins, ts });
+    items.push({ id: `${feed.id}:${link}`, title, link, source: feed.name, cat: feed.cat, tier: feed.tier, macro: feed.cat === "macro" || MACRO.test(title), coins, ts });
   }
+  items.sponsored = sponsored;
   return items;
 }
 
@@ -60,9 +79,9 @@ async function load(feed) {
     const r = await fetch(feed.url, { signal: ctrl.signal, headers: { "user-agent": "Desk101/0.4 (+https://desk101.vercel.app)", accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.5" } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const items = parseFeed(await r.text(), feed);
-    return { items, status: { id: feed.id, name: feed.name, ok: true, count: items.length } };
+    return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: true, count: items.length, sponsoredRemoved: items.sponsored || 0 } };
   } catch (e) {
-    return { items: [], status: { id: feed.id, name: feed.name, ok: false, error: String(e && e.name === "AbortError" ? "timeout" : e && e.message || e) } };
+    return { items: [], status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: String(e && e.name === "AbortError" ? "timeout" : e && e.message || e) } };
   } finally {
     clearTimeout(timer);
   }
