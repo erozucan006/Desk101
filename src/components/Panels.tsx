@@ -49,7 +49,7 @@ export function Watchlist({ bases, quote, tickers, missing, sel, onSelect, onRem
 
 /* ---------- order book ---------- */
 export function OrderBook({ feed, symbol }: { feed: Feed; symbol: string }) {
-  const { book, error } = useBook(feed, symbol, 12);
+  const { book, error } = useBook(feed, symbol, 8);
   const maxQ = useMemo(() => book ? Math.max(...book.bids.map((l) => l.qty), ...book.asks.map((l) => l.qty), 1e-12) : 1, [book]);
   const best = book && book.asks[0] && book.bids[0] ? { ask: book.asks[0].price, bid: book.bids[0].price } : null;
   const spread = best ? best.ask - best.bid : null;
@@ -67,7 +67,7 @@ export function OrderBook({ feed, symbol }: { feed: Feed; symbol: string }) {
   return (
     <section className="pnl">
       <PanelHead code="OB" title="Order book" learn="order_book" status={error ? "unavailable" : book ? timeHMS(book.ts) : "loading…"} />
-      {error ? <p className="note err">The order book for {symbol} is not available: {error}</p> : <>
+      {error ? <p className="note err">The order book for {symbol} is not available: {error}</p> : <div className="scroll book-body">
         <table className="tbl book"><thead><tr><th>Price</th><th>Size</th></tr></thead>
           <tbody>{book?.asks.slice().reverse().map((l) => row(l, "a"))}</tbody></table>
         <div className="spread" data-learn="spread">Spread {spread != null ? price(spread) : "—"} · {bps != null ? bps.toFixed(2) + " bp" : "—"}</div>
@@ -75,7 +75,7 @@ export function OrderBook({ feed, symbol }: { feed: Feed; symbol: string }) {
         {imb != null && <div className="imb" data-learn="imbalance" title="Bid share of visible size">
           <i style={{ width: `${imb * 100}%` }} /><span>Bids {Math.round(imb * 100)}%</span>
         </div>}
-      </>}
+      </div>}
     </section>
   );
 }

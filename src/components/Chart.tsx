@@ -18,8 +18,8 @@ type Props = {
 export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" | "sl" | "tp" };
 
 const C = {
-  line: "#1f2a3c", dim: "#6f7f99", up: "#2ec27e", down: "#ff5a5f", amber: "#ffb02e",
-  ink: "#0b0f17", panel: "#111826", ema9: "#7aa7ff", ema21: "#c792ea",
+  line: "rgba(44,53,66,.55)", dim: "#7a8594", up: "#1fb57a", down: "#f0525c", amber: "#e9b23f",
+  ink: "#0e1217", panel: "#141920", ema9: "#5aa2ff", ema21: "#c4a0ff", rsi: "#a08bff", blue: "#4b8bff",
 };
 
 export function Chart({ candles, tf, showEma, showRsi, positions, orders = [], empty }: Props) {
@@ -50,7 +50,7 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
   cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
   const ctx = cv.getContext("2d")!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, r.width, r.height);
-  ctx.font = "11px 'IBM Plex Mono', ui-monospace, monospace";
+  ctx.font = "500 11px 'IBM Plex Sans', system-ui, sans-serif";
   const W = r.width, H = r.height, padR = 76, padB = 22, padT = 10;
   if (!cs.length) { ctx.fillStyle = C.dim; ctx.fillText(empty, 12, 24); return; }
   const rsiH = showRsi ? 72 : 0, gap = showRsi ? 10 : 0;
@@ -100,13 +100,13 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
   if (showEma) { line(e9, C.ema9, y); line(e21, C.ema21, y); }
   if (showRsi) {
     const rt = volBase + gap, ry = (v: number) => rt + ((100 - v) / 100) * rsiH;
-    ctx.fillStyle = "rgba(255,176,46,.06)"; ctx.fillRect(8, ry(70), plotW, ry(30) - ry(70));
+    ctx.fillStyle = "rgba(160,139,255,.06)"; ctx.fillRect(8, ry(70), plotW, ry(30) - ry(70));
     ctx.strokeStyle = C.line;
     [30, 50, 70].forEach((v) => { const yy = Math.round(ry(v)) + 0.5; ctx.beginPath(); ctx.moveTo(8, yy); ctx.lineTo(8 + plotW, yy); ctx.stroke(); });
     ctx.fillStyle = C.dim; ctx.textAlign = "left"; ctx.textBaseline = "middle";
     [30, 70].forEach((v) => ctx.fillText(String(v), plotW + 14, ry(v)));
     ctx.fillText("RSI", plotW + 40, ry(50));
-    line(rs, C.amber, ry);
+    line(rs, C.rsi, ry);
   }
   // journal markers
   const idxAt = (iso: string) => { const ts = Date.parse(iso); if (!(ts >= cs[0].t)) return -1; let k = -1; cs.forEach((c, i) => { if (c.t <= ts) k = i; }); return k; };
@@ -132,7 +132,7 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
     }
   });
   // resting orders
-  const OC = { limit: C.amber, stop: "#7aa7ff", sl: C.down, tp: C.up };
+  const OC = { limit: C.amber, stop: C.blue, sl: C.down, tp: C.up };
   orders.forEach((o) => {
     if (o.price > top || o.price < bot) return;
     const oy = Math.round(y(o.price)) + 0.5, col = OC[o.kind];
@@ -146,5 +146,5 @@ function paint(cv: HTMLCanvasElement, cs: Candle[], e9: (number | null)[], e21: 
   const lc = cs[n - 1], ly = Math.round(y(lc.c)) + 0.5, lcol = lc.c >= lc.o ? C.up : C.down;
   ctx.setLineDash([3, 3]); ctx.strokeStyle = lcol; ctx.beginPath(); ctx.moveTo(8, ly); ctx.lineTo(8 + plotW, ly); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = lcol; ctx.fillRect(plotW + 10, ly - 9, padR - 12, 18);
-  ctx.fillStyle = C.ink; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(price(lc.c), plotW + 14, ly);
+  ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(price(lc.c), plotW + 14, ly);
 }

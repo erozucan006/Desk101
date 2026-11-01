@@ -163,10 +163,11 @@ export default function App() {
   return (
     <div className={`app ${learnKey ? "with-learn" : ""}`}>
       <header className="topbar">
-        <div className="brand"><b>{APP_NAME.split(" ").map((w) => w[0]).join("").slice(0, 3)}</b><span>{APP_NAME}</span></div>
-        <label className="cmd" htmlFor="cmd"><span>&gt;</span>
-          <input id="cmd" ref={cmdRef} autoComplete="off" spellCheck={false} placeholder="BTC 4H · BUY ETH 0.5 · CLOSE ETH · HELP"
+        <div className="brand"><Logo /><span>Desk<em>101</em></span></div>
+        <label className="cmd" htmlFor="cmd"><span>›</span>
+          <input id="cmd" ref={cmdRef} autoComplete="off" spellCheck={false} placeholder="Type a command: BTC 4H, BUY ETH 0.5, HELP"
             onKeyDown={(e) => { if (e.key === "Enter") { run(e.currentTarget.value); e.currentTarget.value = ""; } }} />
+          <kbd title="Press / to focus">/</kbd>
         </label>
         <div className="tb-right">
           <div className="seg small" data-learn="quote" role="group" aria-label="Quote currency">
@@ -194,7 +195,10 @@ export default function App() {
       )}
 
       <main className="grid">
-        <Watchlist bases={watch} quote={quote} tickers={tickers} missing={missing} sel={sel} onSelect={select} onRemove={remove} />
+        <div className="leftcol">
+          <Watchlist bases={watch} quote={quote} tickers={tickers} missing={missing} sel={sel} onSelect={select} onRemove={remove} />
+          <OrderBook feed={feed} symbol={symbol} />
+        </div>
 
         <section className="pnl chartbox">
           <PanelHead code="GP" title={symbol} learn="candles" status={chartErr ? "unavailable" : candles.length ? `${candles.length} candles` : "loading…"}>
@@ -224,7 +228,7 @@ export default function App() {
 
         <div className="rightcol">
           <OrderTicket symbol={symbol} quote={quote} qs={qs} ticker={t} acc={acc} prices={prices} entryCtx={entryCtx} onPlace={placeOrder} onClosePosition={closePaper} />
-          <OrderBook feed={feed} symbol={symbol} />
+          <Tape feed={feed} symbol={symbol} quoteSym={qs} />
         </div>
       </main>
 
@@ -234,14 +238,13 @@ export default function App() {
 
       <section className="deck">
         <Scanner universe={UNIVERSE} quote={quote} tickers={tickers} watch={watch} onSelect={select} onAdd={add} />
-        <Tape feed={feed} symbol={symbol} quoteSym={qs} />
         <Sessions />
       </section>
 
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.2 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.3 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
       </footer>
 
@@ -271,11 +274,22 @@ export default function App() {
   );
 }
 
+function Logo() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#1a2029" />
+      <rect x="7.5" y="7" width="1.5" height="18" rx=".75" fill="#1fb57a" /><rect x="6" y="11" width="4.5" height="9" rx="1" fill="#1fb57a" />
+      <rect x="15.25" y="5" width="1.5" height="16" rx=".75" fill="#f0525c" /><rect x="13.75" y="8" width="4.5" height="8" rx="1" fill="#f0525c" />
+      <rect x="23" y="9" width="1.5" height="18" rx=".75" fill="#4b8bff" /><rect x="21.5" y="13" width="4.5" height="10" rx="1" fill="#4b8bff" />
+    </svg>
+  );
+}
+
 function Legend({ show }: { show: { ema: boolean; rsi: boolean } }) {
   const c = useLive();
   return (
     <div className="legend">
-      {show.ema && <><span data-learn="ema"><i style={{ background: "#7aa7ff" }} />EMA 9 {price(c.ema9)}</span><span data-learn="ema"><i style={{ background: "#c792ea" }} />EMA 21 {price(c.ema21)}</span></>}
+      {show.ema && <><span data-learn="ema"><i style={{ background: "#5aa2ff" }} />EMA 9 {price(c.ema9)}</span><span data-learn="ema"><i style={{ background: "#c4a0ff" }} />EMA 21 {price(c.ema21)}</span></>}
       {show.rsi && <span data-learn="rsi">RSI 14 <b className={c.rsi != null && c.rsi >= 70 ? "dn" : c.rsi != null && c.rsi <= 30 ? "up" : ""}>{c.rsi != null ? c.rsi.toFixed(1) : "—"}</b></span>}
       <span data-learn="volume_bars" className="dim">Volume</span>
     </div>
