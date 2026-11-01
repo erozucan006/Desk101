@@ -64,11 +64,14 @@ const tag = (block, name) => {
 export function parseFeed(xml, feed) {
   const items = [];
   let sponsored = 0;
+  // Some feeds (ESMA) give links relative to xml:base.
+  const base = (xml.match(/xml:base="([^"]+)"/) || [])[1] || feed.url;
   const blocks = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) || xml.match(/<entry[\s>][\s\S]*?<\/entry>/gi) || [];
   for (const b of blocks.slice(0, 20)) {
     const title = tag(b, "title");
     let link = tag(b, "link");
     if (!link) { const m = b.match(/<link[^>]*href="([^"]+)"/i); link = m ? m[1] : ""; }
+    if (link && !/^https?:\/\//.test(link)) { try { link = new URL(link, base).href; } catch { link = ""; } }
     const when = tag(b, "pubDate") || tag(b, "published") || tag(b, "updated") || tag(b, "dc:date");
     const ts = Date.parse(when);
     if (!title || !/^https?:\/\//.test(link) || !isFinite(ts)) continue;
