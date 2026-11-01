@@ -47,6 +47,12 @@ describe("RSS / Atom parsing", () => {
     expect(items[0].link).toBe("https://www.esma.europa.eu/press-news/esma-news/statement");
   });
 
+  it("falls back to a <time datetime> inside the description", () => {
+    const xml = `<rss><channel><item><title>ESMA newsletter</title><link>https://esma.example/n45</link><description>&lt;time datetime=&quot;2026-10-30T09:12:00Z&quot;&gt;30.10.2026&lt;/time&gt;</description></item></channel></rss>`;
+    const items = parseFeed(xml, { id: "esma", name: "ESMA", cat: "regulation", tier: "official" });
+    expect(items[0].ts).toBe(Date.parse("2026-10-30T09:12:00Z"));
+  });
+
   it("reads Atom entries with href links", () => {
     const xml = `<feed><entry><title type="html">ECB keeps rates unchanged</title><link rel="alternate" href="https://ecb.example/p1"/><updated>2026-10-29T13:15:00Z</updated></entry></feed>`;
     const items = parseFeed(xml, { id: "ecb", name: "ECB", cat: "central-bank", tier: "official" });

@@ -73,7 +73,9 @@ export function parseFeed(xml, feed) {
     if (!link) { const m = b.match(/<link[^>]*href="([^"]+)"/i); link = m ? m[1] : ""; }
     if (link && !/^https?:\/\//.test(link)) { try { link = new URL(link, base).href; } catch { link = ""; } }
     const when = tag(b, "pubDate") || tag(b, "published") || tag(b, "updated") || tag(b, "dc:date");
-    const ts = Date.parse(when);
+    let ts = Date.parse(when);
+    // Drupal feeds (ESMA) can carry the date only inside the HTML description: <time datetime="…">.
+    if (!isFinite(ts)) { const m = b.match(/datetime=(?:"|&quot;)([0-9T:+\-Z.]+)/i); if (m) ts = Date.parse(m[1]); }
     if (!title || !/^https?:\/\//.test(link) || !isFinite(ts)) continue;
     const categories = [...b.matchAll(/<category(?:\s[^>]*)?>([\s\S]*?)<\/category>/gi)].map((m) => decode(m[1]));
     if (feed.tier !== "official" && isSponsored(title, link, categories)) { sponsored++; continue; }
@@ -92,7 +94,7 @@ async function load(feed) {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const body = await r.text();
     const items = parseFeed(body, feed);
-    if (!items.length) return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: `no items parsed: ${((body.match(/<item[\s>][\s\S]{0,400}/i) || [body.slice(0, 200)])[0]).replace(/\s+/g, " ")}` } };
+    if (!items.length) return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: `no items parsed: ${((body.match(/<item[\s>][\s\S]*?<\/item>/i) || [body.slice(0, 200)])[0]).slice(-500).replace(/\s+/g, " ")}` } };
     return { items, status: { id: feed.id, name: feed.name, tier: feed.tier, ok: true, count: items.length, sponsoredRemoved: items.sponsored || 0 } };
   } catch (e) {
     return { items: [], status: { id: feed.id, name: feed.name, tier: feed.tier, ok: false, error: String(e && e.name === "AbortError" ? "timeout" : e && e.message || e) } };
