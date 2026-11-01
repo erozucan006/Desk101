@@ -2,7 +2,11 @@
 
 A live crypto trading terminal that explains every number on screen. Your first trading desk. Built for students and beginners who want to learn to read markets, not just watch them.
 
-**v0.1 demo** — crypto only, English UI, no accounts.
+**v0.5** — crypto only, English UI, no accounts.
+
+## Environment variables (Vercel)
+
+- `FRED_API_KEY` — free key from fred.stlouisfed.org; enables US release results in the calendar. Euro-area results need no key.
 
 ## What's in it
 
