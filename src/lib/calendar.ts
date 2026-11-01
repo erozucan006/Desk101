@@ -2,7 +2,7 @@
 // Times are stored in the publisher's own time zone and converted in the browser, so
 // daylight-saving changes on either side of the Atlantic are handled correctly.
 //
-// Sources (checked 1 Nov 2026):
+// Sources (checked 1 Nov 2026; Sep–Oct 2026 dates from the BLS/BEA monthly schedules):
 //   FOMC   https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
 //   ECB    https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html
 //   CPI    https://www.bls.gov/schedule/news_release/cpi.htm
@@ -23,6 +23,7 @@ export type EconEvent = {
   period?: string;
   impact: Impact;
   at: number; // epoch ms (UTC)
+  ref?: string; // reference period of the data ("2026-10-01" = October 2026; decision date for central banks)
   local: string; // "08:30 ET" as the publisher states it
   source: string;
 };
@@ -55,8 +56,22 @@ export function zoned(date: string, time: string, tz: string): number {
 }
 
 const tzLabel = (tz: string) => (tz === NY ? "ET" : tz === FRA ? "CET" : "UTC");
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Reference period for a release: "Oct" released in Nov 2026 → 2026-10-01; "Dec" released in Jan 2027 → 2026-12-01. */
+export function refPeriod(kind: Kind, releaseDate: string, period?: string): string | undefined {
+  if (kind === "fomc" || kind === "ecb") return releaseDate;
+  if (!period) return undefined;
+  const q = period.match(/^Q([1-4]) (\d{4})$/);
+  if (q) return `${q[2]}-${String((+q[1] - 1) * 3 + 1).padStart(2, "0")}-01`;
+  const mi = MONTHS.indexOf(period);
+  if (mi < 0) return undefined;
+  const [ry, rm] = releaseDate.split("-").map(Number);
+  const y = mi + 1 > rm ? ry - 1 : ry;
+  return `${y}-${String(mi + 1).padStart(2, "0")}-01`;
+}
+
 function ev(kind: Kind, region: Region, title: string, date: string, time: string, tz: string, impact: Impact, source: string, period?: string): EconEvent {
-  return { id: `${kind}-${date}-${time}`, kind, region, title, period, impact, at: zoned(date, time, tz), local: `${time} ${tzLabel(tz)}`, source };
+  return { id: `${kind}-${date}-${time}`, kind, region, title, period, impact, at: zoned(date, time, tz), local: `${time} ${tzLabel(tz)}`, source, ref: refPeriod(kind, date, period) };
 }
 
 const FOMC: [string, boolean][] = [ // decision day, has projections (SEP)
@@ -65,30 +80,31 @@ const FOMC: [string, boolean][] = [ // decision day, has projections (SEP)
   ["2027-01-27", false], ["2027-03-17", true], ["2027-04-28", false], ["2027-06-09", true], ["2027-07-28", false],
   ["2027-09-15", true], ["2027-10-27", false], ["2027-12-08", true],
 ];
-const ECB = ["2026-12-17", "2027-02-04", "2027-03-18", "2027-04-29", "2027-06-10", "2027-07-22", "2027-09-09", "2027-10-28", "2027-12-16"];
+const ECB = ["2026-10-29", "2026-12-17", "2027-02-04", "2027-03-18", "2027-04-29", "2027-06-10", "2027-07-22", "2027-09-09", "2027-10-28", "2027-12-16"];
 const CPI: [string, string][] = [
-  ["2026-11-10", "Oct"], ["2026-12-10", "Nov"], ["2027-01-13", "Dec"], ["2027-02-11", "Jan"], ["2027-03-10", "Feb"], ["2027-04-13", "Mar"],
+  ["2026-09-11", "Aug"], ["2026-10-14", "Sep"], ["2026-11-10", "Oct"], ["2026-12-10", "Nov"], ["2027-01-13", "Dec"], ["2027-02-11", "Jan"], ["2027-03-10", "Feb"], ["2027-04-13", "Mar"],
   ["2027-05-12", "Apr"], ["2027-06-10", "May"], ["2027-07-14", "Jun"], ["2027-08-11", "Jul"], ["2027-09-14", "Aug"], ["2027-10-14", "Sep"],
   ["2027-11-10", "Oct"], ["2027-12-10", "Nov"],
 ];
 const NFP: [string, string][] = [
-  ["2026-11-06", "Oct"], ["2026-12-04", "Nov"], ["2027-01-08", "Dec"], ["2027-02-05", "Jan"], ["2027-03-05", "Feb"], ["2027-04-02", "Mar"],
+  ["2026-09-04", "Aug"], ["2026-10-02", "Sep"], ["2026-11-06", "Oct"], ["2026-12-04", "Nov"], ["2027-01-08", "Dec"], ["2027-02-05", "Jan"], ["2027-03-05", "Feb"], ["2027-04-02", "Mar"],
   ["2027-05-07", "Apr"], ["2027-06-04", "May"], ["2027-07-02", "Jun"], ["2027-08-06", "Jul"], ["2027-09-03", "Aug"], ["2027-10-08", "Sep"],
   ["2027-11-05", "Oct"], ["2027-12-03", "Nov"],
 ];
 const PCE: [string, string][] = [
-  ["2026-11-25", "Oct"], ["2026-12-23", "Nov"], ["2027-01-28", "Dec"], ["2027-02-25", "Jan"], ["2027-03-31", "Feb"], ["2027-04-29", "Mar"],
+  ["2026-09-30", "Aug"], ["2026-10-29", "Sep"], ["2026-11-25", "Oct"], ["2026-12-23", "Nov"], ["2027-01-28", "Dec"], ["2027-02-25", "Jan"], ["2027-03-31", "Feb"], ["2027-04-29", "Mar"],
   ["2027-05-27", "Apr"], ["2027-06-25", "May"], ["2027-07-29", "Jun"], ["2027-08-25", "Jul"], ["2027-09-30", "Aug"], ["2027-10-28", "Sep"],
   ["2027-11-24", "Oct"], ["2027-12-22", "Nov"],
 ];
 const GDP: [string, string, "Advance" | "Second" | "Third"][] = [
+  ["2026-09-30", "Q2 2026", "Third"], ["2026-10-29", "Q3 2026", "Advance"],
   ["2026-11-25", "Q3 2026", "Second"], ["2026-12-23", "Q3 2026", "Third"],
   ["2027-01-28", "Q4 2026", "Advance"], ["2027-02-25", "Q4 2026", "Second"], ["2027-03-31", "Q4 2026", "Third"],
   ["2027-04-29", "Q1 2027", "Advance"], ["2027-05-27", "Q1 2027", "Second"], ["2027-06-25", "Q1 2027", "Third"],
   ["2027-07-29", "Q2 2027", "Advance"], ["2027-08-25", "Q2 2027", "Second"], ["2027-09-30", "Q2 2027", "Third"],
   ["2027-10-28", "Q3 2027", "Advance"], ["2027-11-24", "Q3 2027", "Second"], ["2027-12-22", "Q3 2027", "Third"],
 ];
-const HICP: [string, string][] = [["2026-11-04", "Oct"], ["2026-12-01", "Nov"], ["2027-01-06", "Dec"]];
+const HICP: [string, string][] = [["2026-10-02", "Sep"], ["2026-11-04", "Oct"], ["2026-12-01", "Nov"], ["2027-01-06", "Dec"]];
 
 /** Deribit monthly options expire on the last Friday of the month at 08:00 UTC. */
 function expiries(fromYear: number, toYear: number): EconEvent[] {

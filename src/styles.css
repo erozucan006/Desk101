@@ -309,8 +309,11 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 .sdot.on { color: var(--fg); }
 .sdot.on::before { background: var(--up); box-shadow: 0 0 0 2px var(--up-bg); }
 .cal-date { position: sticky; top: 0; z-index: 1; padding: 6px 12px; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--dim); background: var(--panel-2); }
-.cal-row { display: grid; grid-template-columns: 42px 26px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 12px; }
-.cal-row + .cal-row { border-top: 1px solid rgba(34, 42, 53, .6); }
+.cal-row { display: grid; grid-template-columns: 42px 26px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 12px; width: 100%; background: none; border: 0; text-align: left; color: inherit; }
+.cal-row:hover { background: var(--panel-2); }
+.cal-item + .cal-item { border-top: 1px solid rgba(34, 42, 53, .6); }
+.cal-item.open { background: var(--panel-2); }
+.cal-row.past.has-res { opacity: .85; }
 .cal-row.past { opacity: .5; }
 .cal-row.soon { background: rgba(233, 178, 63, .07); box-shadow: inset 2px 0 0 var(--warn); }
 .cal-time { color: var(--fg-2); }
@@ -323,8 +326,21 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 .imp i:nth-child(1) { height: 5px; } .imp i:nth-child(2) { height: 8px; } .imp i:nth-child(3) { height: 11px; }
 .imp.medium i:nth-child(-n+2) { background: var(--warn); }
 .imp.high i { background: var(--down); }
-.cal-title { background: none; border: 0; padding: 0; text-align: left; color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.cal-title:hover { color: var(--accent); }
+.cal-title { color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cal-when .res { font-weight: 600; color: var(--fg); }
+.ar { font-style: normal; font-size: 9px; margin-right: 4px; vertical-align: 1px; color: var(--fg-2); }
+.cal-detail { padding: 4px 12px 12px 88px; display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 520px) { .cal-detail { padding-left: 12px; } }
+.res-tbl { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.res-tbl td, .res-tbl th { padding: 5px 9px; }
+.res-tbl th { background: var(--panel); }
+.res-tbl td:first-child { font-weight: 400; color: var(--fg-2); white-space: normal; }
+.cd-note { margin: 0; font-size: 12px; color: var(--fg-2); line-height: 1.5; }
+.reaction { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; align-items: baseline; }
+.reaction b { font-weight: 600; }
+.cd-actions { display: flex; gap: 12px; align-items: center; }
+.cd-fine { margin: 0; font-size: 11px; color: var(--dim); }
+.cal .note a { color: var(--fg-2); }
 .cal-when { font-size: 12px; white-space: nowrap; }
 .cal-when b { color: var(--warn); font-weight: 600; }
 
@@ -341,3 +357,4 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 .n-src.macro { color: #8fb5ff; }
 .n-meta .tag { margin-left: 6px; }
 .tag.on { background: var(--accent-bg); color: var(--accent); }
+.foot a { color: var(--fg-2); }
