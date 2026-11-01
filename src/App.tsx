@@ -17,6 +17,7 @@ import type { OrderInput } from "./lib/paper";
 import { OrderBook, PanelHead, Scanner, Tape, Watchlist } from "./components/Panels";
 import { JournalPanel } from "./components/JournalPanel";
 import { LearnDrawer } from "./components/LearnDrawer";
+import { usePairs } from "./lib/pairs";
 
 const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -95,6 +96,7 @@ export default function App() {
   }
 
   const select = useCallback((b: string) => { setSel(b); say(`${b}/${quote} · ${tf}`); }, [quote, tf, say, setSel]);
+  const available = usePairs(quote, !isDemo);
   const add = (b: string) => { if (!watch.includes(b)) setWatch([...watch, b]); say(`${b} added to watchlist.`, "ok"); };
   const remove = (b: string) => setWatch(watch.filter((x) => x !== b));
 
@@ -205,7 +207,7 @@ export default function App() {
 
       <main className="grid">
         <div className="leftcol">
-          <Watchlist bases={watch} quote={quote} tickers={tickers} missing={missing} sel={sel} onSelect={select} onRemove={remove} />
+          <Watchlist bases={watch} quote={quote} tickers={tickers} missing={missing} sel={sel} onSelect={select} onRemove={remove} onAdd={add} available={available} />
           <OrderBook feed={feed} symbol={symbol} />
         </div>
 
@@ -254,7 +256,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.9 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.10 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>

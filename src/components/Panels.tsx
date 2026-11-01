@@ -3,6 +3,7 @@ import type { Feed, Ticker } from "../lib/types";
 import { useBook, useNow, useTrades } from "../lib/hooks";
 import { compact, pct, price, timeHMS } from "../lib/format";
 import { live } from "../lib/live";
+import { searchPairs } from "../lib/pairs";
 
 export function PanelHead({ code, title, learn, children, status }: { code: string; title: ReactNode; learn?: string; children?: ReactNode; status?: ReactNode }) {
   return (
@@ -16,13 +17,45 @@ export function PanelHead({ code, title, learn, children, status }: { code: stri
 }
 
 /* ---------- watchlist ---------- */
-export function Watchlist({ bases, quote, tickers, missing, sel, onSelect, onRemove }: {
+export function Watchlist({ bases, quote, tickers, missing, sel, onSelect, onRemove, onAdd, available }: {
   bases: string[]; quote: string; tickers: Record<string, Ticker>; missing: Record<string, true>;
   sel: string; onSelect: (b: string) => void; onRemove: (b: string) => void;
+  onAdd: (b: string) => void; available: string[];
 }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [hi, setHi] = useState(0);
+  const hits = useMemo(() => searchPairs(available, q, bases), [available, q, bases]);
+  const close = () => { setOpen(false); setQ(""); setHi(0); };
+  const pick = (b: string) => { onAdd(b); setQ(""); setHi(0); };
   return (
     <section className="pnl">
-      <PanelHead code="WL" title="Watchlist" />
+      <PanelHead code="WL" title="Watchlist">
+        <button className={`wl-add${open ? " on" : ""}`} onClick={() => (open ? close() : setOpen(true))} aria-expanded={open} title="Add a coin to the watchlist">{open ? "Done" : "+ Add"}</button>
+      </PanelHead>
+      {open && (
+        <div className="wl-search">
+          <input
+            autoFocus value={q} placeholder={`Search ${available.length} coins (${quote})…`} aria-label="Search coins"
+            onChange={(e) => { setQ(e.target.value); setHi(0); }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") close();
+              else if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, hits.length - 1)); }
+              else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); }
+              else if (e.key === "Enter" && hits[hi]) pick(hits[hi]);
+            }}
+          />
+          {hits.length ? (
+            <ul role="listbox">
+              {hits.map((b, i) => (
+                <li key={b} role="option" aria-selected={i === hi} className={i === hi ? "hi" : ""} onMouseEnter={() => setHi(i)} onMouseDown={(e) => { e.preventDefault(); pick(b); }}>
+                  <span>{b}<span className="dim">/{quote}</span></span><span className="plus">+</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="note">{q.trim() ? (bases.includes(q.trim().toUpperCase()) ? `${q.trim().toUpperCase()} is already on your watchlist.` : `No ${quote} pair for "${q.trim().toUpperCase()}" on Kraken.`) : "All popular coins are already on your list — type to search."}</p>}
+        </div>
+      )}
       <div className="scroll">
         <table className="tbl hover">
           <thead><tr><th>Pair</th><th data-learn="last_price">Last</th><th data-learn="change_24h">24h</th><th aria-label="Remove" /></tr></thead>
@@ -42,6 +75,7 @@ export function Watchlist({ bases, quote, tickers, missing, sel, onSelect, onRem
             })}
           </tbody>
         </table>
+        {!bases.length && <p className="note">Your watchlist is empty. Use “+ Add” to pick coins.</p>}
       </div>
     </section>
   );
