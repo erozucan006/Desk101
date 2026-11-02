@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { APP_NAME, APP_TAGLINE, DEFAULT_WATCH, KRAKEN_WS, TIMEFRAMES, UNIVERSE, type Quote } from "./config";
+import { APP_NAME, DEFAULT_WATCH, KRAKEN_WS, TIMEFRAMES, UNIVERSE, type Quote } from "./config";
 import { KrakenFeed } from "./lib/kraken";
 import { DemoFeed } from "./lib/demo";
 import type { Feed } from "./lib/types";
@@ -19,6 +19,7 @@ import { JournalPanel } from "./components/JournalPanel";
 import { LearnDrawer } from "./components/LearnDrawer";
 import { usePairs } from "./lib/pairs";
 import { EventCard } from "./components/EventCard";
+import { Hero } from "./components/Hero";
 
 const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -194,16 +195,7 @@ export default function App() {
       </header>
 
       {!welcomed && (
-        <section className="welcome">
-          <div>
-            <h1>{APP_TAGLINE}</h1>
-            <p>Live crypto markets with the explanations built in. Turn on <b>Learn</b> (or press <kbd>L</kbd>) and click any number to see what it measures and what it is saying right now. Practise with a <b>10,000 paper account</b> at real prices: every trade lands in your journal, and the coach shows you patterns in your own behaviour.</p>
-          </div>
-          <div className="welcome-actions">
-            <button className="go" onClick={() => { setLearnOn(true); setWelcomed(true); }}>Start with Learn on</button>
-            <button className="ghost" onClick={() => setWelcomed(true)}>I know my way around</button>
-          </div>
-        </section>
+        <Hero t={tickers[`BTC/${quote}`]} symbol={`BTC/${quote}`} onStart={() => { setLearnOn(true); setWelcomed(true); }} onSkip={() => setWelcomed(true)} />
       )}
 
       <main className="grid">
@@ -257,7 +249,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.11 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.12 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
@@ -289,12 +281,14 @@ export default function App() {
 }
 
 function Logo() {
+  // Three candles with a highlighter stroke through them: the market, annotated.
   return (
-    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#1a2029" />
-      <rect x="7.5" y="7" width="1.5" height="18" rx=".75" fill="#1fb57a" /><rect x="6" y="11" width="4.5" height="9" rx="1" fill="#1fb57a" />
-      <rect x="15.25" y="5" width="1.5" height="16" rx=".75" fill="#f0525c" /><rect x="13.75" y="8" width="4.5" height="8" rx="1" fill="#f0525c" />
-      <rect x="23" y="9" width="1.5" height="18" rx=".75" fill="#4b8bff" /><rect x="21.5" y="13" width="4.5" height="10" rx="1" fill="#4b8bff" />
+    <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="8" fill="#15353a" />
+      <rect x="4" y="15" width="24" height="6" rx="2" fill="#f4e04d" opacity=".9" transform="rotate(-8 16 18)" />
+      <rect x="8.25" y="6" width="1.5" height="20" rx=".75" fill="#ecf1e8" /><rect x="6.5" y="10" width="5" height="10" rx="1.2" fill="#ecf1e8" />
+      <rect x="15.25" y="8" width="1.5" height="18" rx=".75" fill="#ff7a6b" /><rect x="13.5" y="12" width="5" height="8" rx="1.2" fill="#ff7a6b" />
+      <rect x="22.25" y="5" width="1.5" height="20" rx=".75" fill="#45d6a0" /><rect x="20.5" y="8" width="5" height="11" rx="1.2" fill="#45d6a0" />
     </svg>
   );
 }

@@ -24,8 +24,9 @@ type EvHit = { x: number; xs: number[]; lx: number; w: number; ids: string[] };
 export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" | "sl" | "tp" };
 
 const C = {
-  line: "rgba(44,53,66,.55)", dim: "#7a8594", up: "#1fb57a", down: "#f0525c", amber: "#e9b23f",
-  ink: "#0e1217", panel: "#141920", ema9: "#5aa2ff", ema21: "#c4a0ff", rsi: "#a08bff", blue: "#4b8bff", cross: "rgba(174,183,196,.55)",
+  line: "rgba(52,92,98,.45)", dim: "#7f9a95", up: "#45d6a0", down: "#ff7a6b", amber: "#ffb84d",
+  ink: "#0c2226", panel: "#102b2f", ema9: "#7cc8f0", ema21: "#e9a3c9", rsi: "#7cc8f0", blue: "#7cc8f0", cross: "rgba(181,198,192,.55)",
+  mark: "#f4e04d",
 };
 const MIN_VISIBLE = 20;
 const DEFAULT_VISIBLE = 150;
@@ -262,7 +263,7 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
   const ctx = cv.getContext("2d")!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, r.width, r.height);
-  const FONT = "500 11px 'IBM Plex Sans', system-ui, sans-serif";
+  const FONT = "500 11px 'Geist', system-ui, sans-serif";
   ctx.font = FONT;
   const W = r.width, H = r.height;
   const cs = all.slice(from, to), e9 = E9.slice(from, to), e21 = E21.slice(from, to), rs = RS.slice(from, to);
@@ -297,7 +298,7 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   for (let i = 0; i < n; i++) {
     if ((from + i) % every) continue;
     const x = X(i);
-    ctx.strokeStyle = "rgba(44,53,66,.3)"; ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, priceTop); ctx.lineTo(Math.round(x) + 0.5, volBase); ctx.stroke();
+    ctx.strokeStyle = "rgba(52,92,98,.25)"; ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, priceTop); ctx.lineTo(Math.round(x) + 0.5, volBase); ctx.stroke();
     if (x > 24 && x < PAD_L + plotW - 20) ctx.fillText(timeLabel(cs[i].t, tf, prevT), x, H - PAD_B + 6);
     prevT = cs[i].t;
   }
@@ -312,7 +313,7 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
     const g = evX.get(i) ?? { labels: [], ids: [] };
     g.labels.push(e.label); g.ids.push(e.id); evX.set(i, g);
   });
-  ctx.font = "600 10px 'IBM Plex Sans', system-ui, sans-serif";
+  ctx.font = "600 10px 'Geist', system-ui, sans-serif";
   // On narrow screens the OHLC readout wraps to two lines; keep the labels below it.
   const evY = priceTop + (W < 600 ? 26 : 0);
   const groups = [...evX.entries()].sort((a, b) => a[0] - b[0]).map(([i, g]) => ({ x: Math.round(X(i)) + 0.5, labels: g.labels, ids: g.ids }));
@@ -331,11 +332,11 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   clusters.forEach((c) => {
     const sel = selEv != null && c.ids.some((id) => selEv.includes(id));
     evHits.push({ x: (c.xs[0] + c.xs[c.xs.length - 1]) / 2, xs: c.xs, lx: c.lx, w: c.w, ids: [...new Set(c.ids)] });
-    ctx.strokeStyle = sel ? "rgba(160,139,255,.95)" : "rgba(160,139,255,.45)"; ctx.setLineDash(sel ? [] : [2, 3]);
+    ctx.strokeStyle = sel ? "rgba(244,224,77,.95)" : "rgba(244,224,77,.4)"; ctx.setLineDash(sel ? [] : [2, 3]);
     c.xs.forEach((x) => { ctx.beginPath(); ctx.moveTo(x, evY + 14); ctx.lineTo(x, volBase); ctx.stroke(); });
     ctx.setLineDash([]);
-    ctx.fillStyle = sel ? "rgba(160,139,255,.5)" : "rgba(160,139,255,.16)"; ctx.fillRect(c.lx, evY, c.w, 14);
-    ctx.fillStyle = C.rsi; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText([...new Set(c.labels)].join(" · "), c.lx + c.w / 2, evY + 7);
+    ctx.fillStyle = sel ? "rgba(244,224,77,.85)" : "rgba(244,224,77,.16)"; ctx.fillRect(c.lx, evY, c.w, 14);
+    ctx.fillStyle = sel ? C.ink : C.mark; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText([...new Set(c.labels)].join(" · "), c.lx + c.w / 2, evY + 7);
   });
   ctx.font = FONT;
   // candles + volume
@@ -358,7 +359,7 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   ctx.restore();
   if (showRsi) {
     const rt = volBase + gap, ry = (v: number) => rt + ((100 - v) / 100) * rsiH;
-    ctx.fillStyle = "rgba(160,139,255,.06)"; ctx.fillRect(PAD_L, ry(70), plotW, ry(30) - ry(70));
+    ctx.fillStyle = "rgba(124,200,240,.06)"; ctx.fillRect(PAD_L, ry(70), plotW, ry(30) - ry(70));
     ctx.strokeStyle = C.line;
     [30, 50, 70].forEach((v) => { const yy = Math.round(ry(v)) + 0.5; ctx.beginPath(); ctx.moveTo(PAD_L, yy); ctx.lineTo(PAD_L + plotW, yy); ctx.stroke(); });
     ctx.fillStyle = C.dim; ctx.textAlign = "left"; ctx.textBaseline = "middle";
@@ -416,13 +417,13 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
     ctx.setLineDash([]);
     if (hover.y <= priceTop + priceH) {
       const pv = top - ((hover.y - priceTop) / priceH) * (top - bot);
-      ctx.fillStyle = "#2c3542"; ctx.fillRect(plotW + PAD_L + 2, hover.y - 9, PAD_R - 4, 18);
-      ctx.fillStyle = "#e6eaf0"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(price(pv), plotW + PAD_L + 8, hover.y);
+      ctx.fillStyle = "#2a4f55"; ctx.fillRect(plotW + PAD_L + 2, hover.y - 9, PAD_R - 4, 18);
+      ctx.fillStyle = "#ecf1e8"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(price(pv), plotW + PAD_L + 8, hover.y);
     }
     const tl = fullTime(cs[i].t, tf), tw = ctx.measureText(tl).width + 12;
     const tx = Math.min(Math.max(PAD_L, x - tw / 2), PAD_L + plotW - tw);
-    ctx.fillStyle = "#2c3542"; ctx.fillRect(tx, H - PAD_B + 2, tw, 18);
-    ctx.fillStyle = "#e6eaf0"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(tl, tx + tw / 2, H - PAD_B + 5);
+    ctx.fillStyle = "#2a4f55"; ctx.fillRect(tx, H - PAD_B + 2, tw, 18);
+    ctx.fillStyle = "#ecf1e8"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(tl, tx + tw / 2, H - PAD_B + 5);
   }
   return { plotW, step, from, cnt: n, n: all.length, priceTop, priceH, top, bot, H, ev: evHits, evY };
 }
