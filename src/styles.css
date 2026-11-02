@@ -2,21 +2,21 @@
    Layout: top bar (brand · command search · controls); trading grid (watchlist | chart | ticket + book);
    account; deck (scanner | tape | sessions); journal. Learn drawer slides in from the right.
    Type: Bricolage Grotesque for display (brand, panel titles, big numbers), Geist for the interface with tabular
-   figures, Geist Mono for the command line. Colour: ink-teal board on a graph-paper grid, paper-white text, one
+   figures, Geist Mono for the command line. Colour: black desk on a faint graph-paper grid, paper-white text, one
    highlighter yellow for actions and Learn notes, green/coral reserved for market direction. */
 :root {
-  /* "Study notes on a live market": ink-teal board, paper text, one highlighter. */
-  --bg: #0c2226;
-  --panel: #102b2f;
-  --panel-2: #15353a;
-  --panel-3: #1b4046;
-  --line: #1e3d42;
-  --line-2: #2a4f55;
-  --fg: #ecf1e8;
-  --fg-2: #b5c6c0;
-  --dim: #7f9a95;
+  /* "Study notes on a live market": black desk, paper-white text, one highlighter. */
+  --bg: #0a0a0a;
+  --panel: #121212;
+  --panel-2: #191919;
+  --panel-3: #222222;
+  --line: #232323;
+  --line-2: #2f2f2f;
+  --fg: #f2f0ea;
+  --fg-2: #bebbb3;
+  --dim: #85827b;
   --accent: #f4e04d;
-  --accent-ink: #0c2226;
+  --accent-ink: #0a0a0a;
   --accent-bg: rgba(244, 224, 77, .13);
   --up: #45d6a0;
   --up-bg: rgba(69, 214, 160, .13);
@@ -38,10 +38,10 @@ html, body { margin: 0; background: var(--bg); color: var(--fg); }
 /* Graph paper: a fine 24px grid with a stronger line every fifth square, fixed behind the desk. */
 body {
   background-image:
-    linear-gradient(rgba(126, 186, 190, .075) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(126, 186, 190, .075) 1px, transparent 1px),
-    linear-gradient(rgba(126, 186, 190, .035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(126, 186, 190, .035) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, .02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .02) 1px, transparent 1px);
   background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
   background-attachment: fixed;
 }
@@ -64,10 +64,10 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line-
 @media (min-width: 1200px) { .app.with-learn { padding-right: 392px; } }
 
 /* ---------- top bar ---------- */
-.topbar { position: sticky; top: 0; z-index: 5; background: rgba(12, 34, 38, .88); backdrop-filter: blur(10px) saturate(1.2); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding-block: 10px 6px; border-bottom: 1px solid var(--line); margin-inline: -12px; padding-inline: 12px; }
+.topbar { position: sticky; top: 0; z-index: 5; background: rgba(10, 10, 10, .86); backdrop-filter: blur(10px); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding-block: 10px 6px; border-bottom: 1px solid var(--line); margin-inline: -12px; padding-inline: 12px; }
 .brand { display: flex; align-items: center; gap: 9px; font-family: var(--f-display); font-weight: 700; font-size: 19px; letter-spacing: -.02em; white-space: nowrap; }
 .brand svg { display: block; }
-.brand em { font-style: normal; color: var(--accent-ink); background: var(--accent); border-radius: 4px; padding: 0 4px; margin-left: 2px; font-weight: 800; transform: rotate(-3deg); display: inline-block; }
+.brand em { font-style: normal; color: var(--accent); font-weight: 800; }
 .cmd { flex: 1 1 320px; max-width: 560px; min-width: 0; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r); padding: 0 10px; height: 34px; }
 .cmd:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 .cmd span { color: var(--accent); font-family: var(--f-mono); font-size: 15px; font-weight: 600; }
@@ -424,7 +424,7 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
 @media (max-width: 700px) { .ev-pop { left: 8px; right: 8px; width: auto; top: 84px; } }
 
 /* ---------- hero: a live price, annotated ---------- */
-.hero { position: relative; margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); grid-template-areas: "h spec" "lede spec" "act spec"; grid-template-rows: auto auto 1fr; gap: 0 48px; align-items: start; padding: 34px 32px; border: 1px solid var(--line-2); border-radius: 16px; background: radial-gradient(120% 140% at 100% 0%, rgba(124, 200, 240, .08), transparent 55%), var(--panel); overflow: hidden; }
+.hero { position: relative; margin-top: 14px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); grid-template-areas: "h spec" "lede spec" "act spec"; grid-template-rows: auto auto 1fr; gap: 0 48px; align-items: start; padding: 34px 32px; border: 1px solid var(--line-2); border-radius: 16px; background: radial-gradient(90% 120% at 100% 0%, rgba(244, 224, 77, .07), transparent 55%), var(--panel); overflow: hidden; }
 .hero h1 { grid-area: h; margin: 0; font-family: var(--f-display); font-weight: 750; font-size: clamp(34px, 4.6vw, 62px); line-height: .98; letter-spacing: -.035em; font-variation-settings: "opsz" 96; text-wrap: balance; max-width: 13ch; }
 .hero-lede { grid-area: lede; margin: 18px 0 0; max-width: 52ch; color: var(--fg-2); font-size: 15px; line-height: 1.6; }
 .hero-actions { grid-area: act; align-self: start; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }

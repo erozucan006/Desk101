@@ -249,7 +249,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.12 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.13 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
@@ -281,14 +281,15 @@ export default function App() {
 }
 
 function Logo() {
-  // Three candles with a highlighter stroke through them: the market, annotated.
+  // A highlighter-yellow tile with three rising candles cut out of it.
   return (
-    <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="8" fill="#15353a" />
-      <rect x="4" y="15" width="24" height="6" rx="2" fill="#f4e04d" opacity=".9" transform="rotate(-8 16 18)" />
-      <rect x="8.25" y="6" width="1.5" height="20" rx=".75" fill="#ecf1e8" /><rect x="6.5" y="10" width="5" height="10" rx="1.2" fill="#ecf1e8" />
-      <rect x="15.25" y="8" width="1.5" height="18" rx=".75" fill="#ff7a6b" /><rect x="13.5" y="12" width="5" height="8" rx="1.2" fill="#ff7a6b" />
-      <rect x="22.25" y="5" width="1.5" height="20" rx=".75" fill="#45d6a0" /><rect x="20.5" y="8" width="5" height="11" rx="1.2" fill="#45d6a0" />
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="7" fill="#f4e04d" />
+      <g fill="#0a0a0a">
+        <rect x="7.4" y="13" width="1.4" height="13" rx=".7" /><rect x="5.6" y="16" width="5" height="7" rx="1" />
+        <rect x="15.3" y="9" width="1.4" height="15" rx=".7" /><rect x="13.5" y="11.5" width="5" height="9" rx="1" />
+        <rect x="23.2" y="5" width="1.4" height="17" rx=".7" /><rect x="21.4" y="7" width="5" height="11" rx="1" />
+      </g>
     </svg>
   );
 }

@@ -24,8 +24,8 @@ type EvHit = { x: number; xs: number[]; lx: number; w: number; ids: string[] };
 export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" | "sl" | "tp" };
 
 const C = {
-  line: "rgba(52,92,98,.45)", dim: "#7f9a95", up: "#45d6a0", down: "#ff7a6b", amber: "#ffb84d",
-  ink: "#0c2226", panel: "#102b2f", ema9: "#7cc8f0", ema21: "#e9a3c9", rsi: "#7cc8f0", blue: "#7cc8f0", cross: "rgba(181,198,192,.55)",
+  line: "rgba(255,255,255,.07)", dim: "#85827b", up: "#45d6a0", down: "#ff7a6b", amber: "#ffb84d",
+  ink: "#0a0a0a", panel: "#121212", ema9: "#7cc8f0", ema21: "#e9a3c9", rsi: "#7cc8f0", blue: "#7cc8f0", cross: "rgba(190,187,179,.5)",
   mark: "#f4e04d",
 };
 const MIN_VISIBLE = 20;
@@ -298,7 +298,7 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   for (let i = 0; i < n; i++) {
     if ((from + i) % every) continue;
     const x = X(i);
-    ctx.strokeStyle = "rgba(52,92,98,.25)"; ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, priceTop); ctx.lineTo(Math.round(x) + 0.5, volBase); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.04)"; ctx.beginPath(); ctx.moveTo(Math.round(x) + 0.5, priceTop); ctx.lineTo(Math.round(x) + 0.5, volBase); ctx.stroke();
     if (x > 24 && x < PAD_L + plotW - 20) ctx.fillText(timeLabel(cs[i].t, tf, prevT), x, H - PAD_B + 6);
     prevT = cs[i].t;
   }
@@ -417,13 +417,13 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
     ctx.setLineDash([]);
     if (hover.y <= priceTop + priceH) {
       const pv = top - ((hover.y - priceTop) / priceH) * (top - bot);
-      ctx.fillStyle = "#2a4f55"; ctx.fillRect(plotW + PAD_L + 2, hover.y - 9, PAD_R - 4, 18);
-      ctx.fillStyle = "#ecf1e8"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(price(pv), plotW + PAD_L + 8, hover.y);
+      ctx.fillStyle = "#2f2f2f"; ctx.fillRect(plotW + PAD_L + 2, hover.y - 9, PAD_R - 4, 18);
+      ctx.fillStyle = "#f2f0ea"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(price(pv), plotW + PAD_L + 8, hover.y);
     }
     const tl = fullTime(cs[i].t, tf), tw = ctx.measureText(tl).width + 12;
     const tx = Math.min(Math.max(PAD_L, x - tw / 2), PAD_L + plotW - tw);
-    ctx.fillStyle = "#2a4f55"; ctx.fillRect(tx, H - PAD_B + 2, tw, 18);
-    ctx.fillStyle = "#ecf1e8"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(tl, tx + tw / 2, H - PAD_B + 5);
+    ctx.fillStyle = "#2f2f2f"; ctx.fillRect(tx, H - PAD_B + 2, tw, 18);
+    ctx.fillStyle = "#f2f0ea"; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(tl, tx + tw / 2, H - PAD_B + 5);
   }
   return { plotW, step, from, cnt: n, n: all.length, priceTop, priceH, top, bot, H, ev: evHits, evY };
 }
