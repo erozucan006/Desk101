@@ -23,6 +23,8 @@ import { Hero } from "./components/Hero";
 import { Intro } from "./components/Intro";
 import { Tick } from "./components/Tick";
 import { LearnTip } from "./components/LearnTip";
+import { Assistant } from "./components/Assistant";
+import { equity } from "./lib/paper";
 import { Smoke } from "./components/Smoke";
 import { Review } from "./components/Review";
 import { buildReview, sampleTrades, type Review as ReviewData } from "./lib/review";
@@ -39,6 +41,8 @@ export default function App() {
   const [ind, setInd] = useStored<{ ema: boolean; rsi: boolean }>("ind", { ema: true, rsi: true });
   const [learnOn, setLearnOn] = useState(false);
   const [learnKey, setLearnKey] = useState<string | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
+  const [askPrefill, setAskPrefill] = useState<string | null>(null);
   const [welcomed, setWelcomed] = useStored<boolean>("welcomed", false);
   // Opening sequence once per browser session; skipped for reduced motion.
   const [intro, setIntro] = useState(() => {
@@ -274,12 +278,14 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} onReview={() => openReview()} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.17 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.18 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
 
-      <LearnDrawer k={learnKey} onClose={() => setLearnKey(null)} />
+      <LearnDrawer k={learnKey} onClose={() => setLearnKey(null)} onAsk={(q) => { setLearnKey(null); setAskPrefill(q); setAskOpen(true); }} />
+      <Assistant open={askOpen} onOpen={() => { setAskPrefill(null); setAskOpen(true); }} onClose={() => setAskOpen(false)} prefill={askPrefill} nextEvent={soon}
+        paper={{ equity: equity(acc, quote, prices), positions: Object.entries(acc.positions).filter(([s]) => s.endsWith("/" + quote)).map(([s, p]) => `${p.qty} ${s.split("/")[0]}`) }} />
 
       {helpOpen && (
         <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) setHelpOpen(false); }}>

@@ -40,7 +40,7 @@ body { background: radial-gradient(70% 55% at 50% -8%, rgba(242, 240, 234, .06),
 body::before { content: ""; position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: .07; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 220px; }
 body::after { content: ""; position: fixed; inset: 0; z-index: 29; pointer-events: none; background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, .55) 100%); }
 body { font: 13px/1.45 var(--f-ui); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--fg-2); }
@@ -606,3 +606,44 @@ body.learning .chartwrap[data-learn]:hover { background-color: transparent; box-
 .ltip .ltip-now { margin-top: 7px; padding-top: 7px; border-top: 1px solid rgba(255, 255, 255, .08); color: var(--fg); }
 .ltip-more { display: block; margin-top: 7px; font-family: var(--f-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 @media (prefers-reduced-motion: reduce) { .ltip { transition: none; } }
+
+/* ---------- Ask Desk: the tutor ---------- */
+.ask-fab { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); z-index: 40; display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(24, 24, 24, .9); backdrop-filter: blur(12px); color: var(--fg); font-weight: 600; font-size: 13.5px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .4), 0 14px 36px -10px rgba(0, 0, 0, .9), 0 0 30px rgba(255, 255, 255, .06); transition: transform .2s, opacity .2s, box-shadow .2s; }
+.ask-fab:hover { box-shadow: 0 0 0 1px rgba(0, 0, 0, .4), 0 14px 36px -10px rgba(0, 0, 0, .9), 0 0 36px rgba(255, 255, 255, .14); transform: translateY(-1px); }
+.ask-fab.hide { opacity: 0; transform: translateY(10px) scale(.96); pointer-events: none; }
+.ask { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); z-index: 41; width: min(400px, calc(100vw - 24px)); height: min(600px, calc(100vh - 100px));
+  display: flex; flex-direction: column; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(16, 16, 16, .94); backdrop-filter: blur(16px);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .95), 0 0 50px rgba(255, 255, 255, .04);
+  opacity: 0; visibility: hidden; transform: translateY(14px) scale(.98); filter: blur(6px); pointer-events: none; transform-origin: bottom right; transition: opacity .28s ease, transform .28s cubic-bezier(.2, .7, .2, 1), filter .28s ease, visibility 0s .28s; }
+.ask.open { opacity: 1; visibility: visible; transform: none; filter: none; pointer-events: auto; transition-delay: 0s; }
+.ask-head { display: flex; align-items: center; gap: 10px; padding: 13px 14px 11px; border-bottom: 1px solid var(--line); }
+.ask-head > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ask-head b { font-family: var(--f-display); font-size: 16px; font-weight: 650; }
+.ask-head span { font-size: 11.5px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ask-head .x { font-size: 22px; }
+.ask-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ask-empty p { margin: 0 0 12px; color: var(--fg-2); font-size: 13px; line-height: 1.55; }
+.ask-chips { display: flex; flex-direction: column; gap: 7px; }
+.ask-chips button { text-align: left; background: rgba(255, 255, 255, .035); border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 11px; font-size: 13px; color: var(--fg); transition: background .15s, border-color .15s; }
+.ask-chips button:hover { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .22); }
+.ask-msg { max-width: 88%; padding: 9px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; animation: msgin .3s ease-out both; }
+.ask-msg.user { align-self: flex-end; background: var(--fg); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+.ask-msg.assistant { align-self: flex-start; background: rgba(255, 255, 255, .05); border: 1px solid var(--line-2); border-bottom-left-radius: 4px; }
+.ask-msg.err { color: var(--fg-2); border-style: dashed; }
+@keyframes msgin { from { opacity: 0; transform: translateY(6px); filter: blur(4px); } }
+.ask-dots { display: inline-flex; gap: 4px; padding: 3px 0; }
+.ask-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--fg-2); animation: dot 1s infinite ease-in-out; }
+.ask-dots i:nth-child(2) { animation-delay: .15s; } .ask-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+.ask-form { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px 6px; border-top: 1px solid var(--line); }
+.ask-form textarea { flex: 1; resize: none; max-height: 120px; min-height: 38px; background: var(--bg); border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 11px; font-size: 13.5px; line-height: 1.4; color: var(--fg); field-sizing: content; }
+.ask-form textarea:focus { outline: none; border-color: rgba(255, 255, 255, .35); }
+.ask-form .go { padding: 9px 14px; border-radius: 10px; }
+.ask-form .go:disabled { opacity: .4; cursor: default; }
+.ask-fine { margin: 0; padding: 0 14px 10px; font-size: 11px; color: var(--dim); }
+.ask-more { display: block; width: 100%; margin-top: 18px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, .04); color: var(--fg); font-weight: 600; text-align: left; }
+.ask-more:hover { background: rgba(255, 255, 255, .08); }
+@media (max-width: 560px) { .ask { right: 0; bottom: 0; width: 100vw; height: 88vh; border-radius: 16px 16px 0 0; } .ask-fab { padding: 10px 14px; } }
+@media (prefers-reduced-motion: reduce) { .ask, .ask-msg { transition: none; animation: none; } }

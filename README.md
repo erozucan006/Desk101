@@ -7,9 +7,11 @@ A live crypto trading terminal that explains every number on screen. Your first 
 ## Environment variables (Vercel)
 
 - `FRED_API_KEY` — free key from fred.stlouisfed.org; enables US release results in the calendar. Euro-area results need no key.
+- `ANTHROPIC_API_KEY` — key from console.anthropic.com; enables **Ask Desk**, the tutor (`/api/ask`). Optional: `ASK_MODEL` (default `claude-haiku-5-5`), `ASK_DAILY_LIMIT` (questions per visitor per day, default 30).
 
 ## What's in it
 
+- **Ask Desk**: a tutor that sees the screen (pair, price, indicators, order book, next release, the student's journal stats) and explains. Education only: it never gives buy/sell calls.
 - **Official news**: headlines only from institutions that allow reuse with attribution — Federal Reserve (press releases, speeches), ECB, US BLS (CPI, jobs, PPI, JOLTS), SEC, ESMA. Crypto media feeds were removed because their terms restrict commercial/automated use; licensed market news is planned.
 - **Economic calendar** with results (FRED, ECB, Eurostat) and the BTC move after each release.
 

@@ -1,7 +1,7 @@
 import { LEARN } from "../lib/learn";
 import { useLive } from "../lib/hooks";
 
-export function LearnDrawer({ k, onClose }: { k: string | null; onClose: () => void }) {
+export function LearnDrawer({ k, onClose, onAsk }: { k: string | null; onClose: () => void; onAsk?: (q: string) => void }) {
   const ctx = useLive();
   const e = k ? LEARN[k] : null;
   return (
@@ -13,6 +13,7 @@ export function LearnDrawer({ k, onClose }: { k: string | null; onClose: () => v
           <h3>What it is</h3><p>{e.what}</p>
           <h3>How to read it</h3><p>{e.read}</p>
           {e.mistake && <><h3>Common mistake</h3><p className="mistake">{e.mistake}</p></>}
+          {onAsk && <button className="ask-more" onClick={() => onAsk(`Explain ${e.title} using what's on my screen right now.`)}>Ask Desk about {e.title.toLowerCase()}</button>}
           <p className="fine">Educational explanation, not investment advice.</p>
         </div>
       )}
