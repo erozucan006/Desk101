@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import type { Ticker } from "../lib/types";
+import type { Feed, Ticker } from "../lib/types";
+import { useCandles } from "../lib/hooks";
+import { DitherChart } from "./Dither";
 import { price } from "../lib/format";
 import { APP_TAGLINE } from "../config";
 
 /** First-visit hero: a live price annotated like a page of study notes. */
-export function Hero({ t, symbol, onStart, onSkip }: { t?: Ticker; symbol: string; onStart: () => void; onSkip: () => void }) {
+export function Hero({ feed, t, symbol, onStart, onSkip, ready = true }: { feed: Feed; t?: Ticker; symbol: string; onStart: () => void; onSkip: () => void; ready?: boolean }) {
+  const { candles } = useCandles(feed, symbol, 1440); // daily closes for the engraving
   const [flash, setFlash] = useState<"up" | "dn" | null>(null);
   const prev = useRef<number | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -25,6 +28,7 @@ export function Hero({ t, symbol, onStart, onSkip }: { t?: Ticker; symbol: strin
 
   return (
     <section className="hero" aria-labelledby="hero-h">
+      <div className="hero-art">{ready && <DitherChart candles={candles} />}</div>
       <h1 id="hero-h">{APP_TAGLINE}</h1>
       <p className="hero-lede">Real crypto prices, live from Kraken, with a note beside every number telling you what it means right now. Practise with a 10,000 paper account, and the journal shows you the habits behind your wins and losses.</p>
       <div className="hero-actions">

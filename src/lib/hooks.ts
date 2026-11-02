@@ -56,6 +56,7 @@ export function useCandles(feed: Feed, symbol: string, minutes: number) {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     setCandles([]); setError(null);
+    if (!symbol) return;
     return feed.candles(symbol, minutes, setCandles, setError);
   }, [feed, symbol, minutes]);
   return { candles, error };

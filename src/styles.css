@@ -2,7 +2,7 @@
    Layout: top bar (brand · command search · controls); trading grid (watchlist | chart | ticket + book);
    account; deck (scanner | tape | sessions); journal. Learn drawer slides in from the right.
    Type: Bricolage Grotesque for display (brand, panel titles, big numbers), Geist for the interface with tabular
-   figures, Geist Mono for the command line. Colour: black desk on a faint graph-paper grid, paper-white text, one
+   figures, Geist Mono for the command line. Colour: black desk with film grain and a vignette, paper-white text, one
    highlighter yellow for actions and Learn notes, green/coral reserved for market direction. */
 :root {
   /* "Study notes on a live market": black desk, paper-white text, one highlighter. */
@@ -35,16 +35,10 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); }
-/* Graph paper: a fine 24px grid with a stronger line every fifth square, fixed behind the desk. */
-body {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, .02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .02) 1px, transparent 1px);
-  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
-  background-attachment: fixed;
-}
+/* Background: black, a soft pool of light at the top (the screen glow), film grain and a vignette. */
+body { background: radial-gradient(70% 55% at 50% -8%, rgba(244, 224, 77, .06), transparent 70%) fixed, var(--bg); }
+body::before { content: ""; position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: .07; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 220px; }
+body::after { content: ""; position: fixed; inset: 0; z-index: 29; pointer-events: none; background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, .55) 100%); }
 body { font: 13px/1.45 var(--f-ui); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -475,3 +469,35 @@ body.learning .chartwrap[data-learn], body.learning .tiles > div[data-learn], bo
   .sp-note { padding-left: 0; padding-top: 2px; }
   .sp-note::before, .sp-note::after { display: none; }
 }
+
+/* ---------- intro: from black, the desk lights up ---------- */
+@property --hole { syntax: "<length-percentage>"; inherits: false; initial-value: -20%; }
+.intro { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 22px; background: #000; cursor: pointer;
+  -webkit-mask-image: radial-gradient(circle at 50% 46%, transparent var(--hole), #000 calc(var(--hole) + 12%)); mask-image: radial-gradient(circle at 50% 46%, transparent var(--hole), #000 calc(var(--hole) + 12%)); }
+.intro.out { animation: lightup .9s cubic-bezier(.6, 0, .2, 1) forwards; }
+@keyframes lightup { from { --hole: -20%; } to { --hole: 140%; } }
+.intro-mark { display: flex; align-items: center; gap: 16px; animation: markin .7s cubic-bezier(.2, .8, .2, 1) both; }
+.intro-mark .c1, .intro-mark .c2, .intro-mark .c3 { transform-box: fill-box; transform-origin: bottom; animation: grow .5s cubic-bezier(.2, .8, .2, 1) both; }
+.intro-mark .c1 { animation-delay: .25s; } .intro-mark .c2 { animation-delay: .38s; } .intro-mark .c3 { animation-delay: .51s; }
+.intro-word { font-family: var(--f-display); font-weight: 700; font-size: 44px; letter-spacing: -.03em; color: var(--fg); }
+.intro-word em { font-style: normal; color: var(--accent); font-weight: 800; }
+.intro-price { font-family: var(--f-display); font-weight: 600; font-size: 22px; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--fg); animation: fadein .5s .6s ease-out both; }
+.intro-price .dim { font-size: 14px; font-weight: 500; margin-right: 6px; }
+@keyframes markin { from { opacity: 0; transform: translateY(8px) scale(.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+/* while the intro plays, the desk waits in the dark and the hero notes hold their first frame */
+.app { transition: filter 1s ease-out; }
+.app.dimmed { filter: brightness(.25) saturate(.6); }
+.app.dimmed .sp-note, .app.dimmed .sp-note::before, .app.dimmed .sp-note::after, .app.dimmed .sp-note mark { animation-play-state: paused; }
+@supports not (mask-image: radial-gradient(circle, transparent 0%, #000 1%)) { .intro.out { animation: fadeout .6s ease-out forwards; } }
+@keyframes fadeout { to { opacity: 0; } }
+
+/* ---------- hero art: the price history as a dithered engraving ---------- */
+.hero > * { position: relative; z-index: 1; }
+.hero { padding-bottom: 150px; }
+.hero > .hero-art { position: absolute; z-index: 0; inset: auto 0 0 0; height: 210px; pointer-events: none; opacity: .4;
+  -webkit-mask-image: linear-gradient(to top, #000 45%, transparent), linear-gradient(to right, transparent, #000 15%, #000 85%, transparent); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to top, #000 45%, transparent), linear-gradient(to right, transparent, #000 15%, #000 85%, transparent); mask-composite: intersect; }
+@media (max-width: 900px) { .hero { padding-bottom: 120px; } .hero > .hero-art { height: 160px; } }
+.dither { display: block; width: 100%; height: 100%; }

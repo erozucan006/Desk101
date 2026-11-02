@@ -20,6 +20,7 @@ import { LearnDrawer } from "./components/LearnDrawer";
 import { usePairs } from "./lib/pairs";
 import { EventCard } from "./components/EventCard";
 import { Hero } from "./components/Hero";
+import { Intro } from "./components/Intro";
 
 const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -34,6 +35,11 @@ export default function App() {
   const [learnOn, setLearnOn] = useState(false);
   const [learnKey, setLearnKey] = useState<string | null>(null);
   const [welcomed, setWelcomed] = useStored<boolean>("welcomed", false);
+  // Opening sequence once per browser session; skipped for reduced motion.
+  const [intro, setIntro] = useState(() => {
+    try { return !sessionStorage.getItem("d101.intro") && !window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; }
+  });
+  const endIntro = useCallback(() => { setIntro(false); try { sessionStorage.setItem("d101.intro", "1"); } catch { /* ignore */ } }, []);
   const [helpOpen, setHelpOpen] = useState(false);
   const [msg, setMsg] = useState<{ text: string; tone?: "ok" | "err" }>({ text: "Type a command and press Enter. Try BTC 4H, BUY ETH 0.5 or HELP." });
   const cmdRef = useRef<HTMLInputElement>(null);
@@ -174,7 +180,9 @@ export default function App() {
   const statusLabel = { connecting: "Connecting", live: "Live · Kraken", reconnecting: "Reconnecting…", offline: "Offline", demo: "Demo data" }[status];
 
   return (
-    <div className={`app ${learnKey ? "with-learn" : ""}`}>
+    <>
+    {intro && <Intro last={tickers[`BTC/${quote}`]?.last} quote={quote} onDone={endIntro} />}
+    <div className={`app ${learnKey ? "with-learn" : ""} ${intro ? "dimmed" : "lit"}`}>
       <header className="topbar">
         <div className="brand"><Logo /><span>Desk<em>101</em></span></div>
         <label className="cmd" htmlFor="cmd"><span>›</span>
@@ -195,7 +203,7 @@ export default function App() {
       </header>
 
       {!welcomed && (
-        <Hero t={tickers[`BTC/${quote}`]} symbol={`BTC/${quote}`} onStart={() => { setLearnOn(true); setWelcomed(true); }} onSkip={() => setWelcomed(true)} />
+        <Hero feed={feed} ready={!intro} t={tickers[`BTC/${quote}`]} symbol={`BTC/${quote}`} onStart={() => { setLearnOn(true); setWelcomed(true); }} onSkip={() => setWelcomed(true)} />
       )}
 
       <main className="grid">
@@ -249,7 +257,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.13 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.14 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
@@ -277,6 +285,7 @@ export default function App() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
