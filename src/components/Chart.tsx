@@ -26,7 +26,7 @@ export type ChartOrder = { price: number; label: string; kind: "limit" | "stop" 
 const C = {
   line: "rgba(255,255,255,.07)", dim: "#85827b", up: "#45d6a0", down: "#ff7a6b", amber: "#ffb84d",
   ink: "#0a0a0a", panel: "#121212", ema9: "#7cc8f0", ema21: "#e9a3c9", rsi: "#7cc8f0", blue: "#7cc8f0", cross: "rgba(190,187,179,.5)",
-  mark: "#f4e04d",
+  mark: "#f2f0ea",
 };
 const MIN_VISIBLE = 20;
 const DEFAULT_VISIBLE = 150;
@@ -332,10 +332,10 @@ function paint(cv: HTMLCanvasElement, all: Candle[], from: number, to: number, E
   clusters.forEach((c) => {
     const sel = selEv != null && c.ids.some((id) => selEv.includes(id));
     evHits.push({ x: (c.xs[0] + c.xs[c.xs.length - 1]) / 2, xs: c.xs, lx: c.lx, w: c.w, ids: [...new Set(c.ids)] });
-    ctx.strokeStyle = sel ? "rgba(244,224,77,.95)" : "rgba(244,224,77,.4)"; ctx.setLineDash(sel ? [] : [2, 3]);
+    ctx.strokeStyle = sel ? "rgba(242, 240, 234,.95)" : "rgba(242, 240, 234,.4)"; ctx.setLineDash(sel ? [] : [2, 3]);
     c.xs.forEach((x) => { ctx.beginPath(); ctx.moveTo(x, evY + 14); ctx.lineTo(x, volBase); ctx.stroke(); });
     ctx.setLineDash([]);
-    ctx.fillStyle = sel ? "rgba(244,224,77,.85)" : "rgba(244,224,77,.16)"; ctx.fillRect(c.lx, evY, c.w, 14);
+    ctx.fillStyle = sel ? "rgba(242, 240, 234,.85)" : "rgba(242, 240, 234,.16)"; ctx.fillRect(c.lx, evY, c.w, 14);
     ctx.fillStyle = sel ? C.ink : C.mark; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText([...new Set(c.labels)].join(" · "), c.lx + c.w / 2, evY + 7);
   });
   ctx.font = FONT;

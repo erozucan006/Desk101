@@ -4,6 +4,7 @@ import { useBook, useNow, useTrades } from "../lib/hooks";
 import { compact, pct, price, timeHMS } from "../lib/format";
 import { live } from "../lib/live";
 import { searchPairs } from "../lib/pairs";
+import { Tick } from "./Tick";
 
 export function PanelHead({ code, title, learn, children, status }: { code: string; title: ReactNode; learn?: string; children?: ReactNode; status?: ReactNode }) {
   return (
@@ -66,7 +67,7 @@ export function Watchlist({ bases, quote, tickers, missing, sel, onSelect, onRem
                 <tr key={b} className={b === sel ? "sel" : ""} onClick={() => onSelect(b)}>
                   <td>{b}</td>
                   {missing[s] ? <td colSpan={2} className="dim small">not listed</td> : <>
-                    <td>{t ? price(t.last) : "…"}</td>
+                    <td>{t ? <Tick value={t.last}>{price(t.last)}</Tick> : "…"}</td>
                     <td className={t ? (t.changePct >= 0 ? "up" : "dn") : ""}>{t ? pct(t.changePct) : ""}</td>
                   </>}
                   <td><button className="x" title={`Remove ${b}`} onClick={(e) => { e.stopPropagation(); onRemove(b); }}>×</button></td>

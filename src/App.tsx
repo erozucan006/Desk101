@@ -21,6 +21,8 @@ import { usePairs } from "./lib/pairs";
 import { EventCard } from "./components/EventCard";
 import { Hero } from "./components/Hero";
 import { Intro } from "./components/Intro";
+import { Tick } from "./components/Tick";
+import { Smoke } from "./components/Smoke";
 import { Review } from "./components/Review";
 import { buildReview, sampleTrades, type Review as ReviewData } from "./lib/review";
 
@@ -193,6 +195,7 @@ export default function App() {
   return (
     <>
     {review && <Review data={review.data} sample={review.sample} onClose={() => setReview(null)} />}
+    <div className="bg-smoke" aria-hidden="true"><Smoke intensity={0.6} /></div>
     {intro && <Intro last={tickers[`BTC/${quote}`]?.last} quote={quote} onDone={endIntro} />}
     <div className={`app ${learnKey ? "with-learn" : ""} ${intro ? "dimmed" : "lit"}`}>
       <header className="topbar">
@@ -236,7 +239,7 @@ export default function App() {
           </PanelHead>
           <div className="quote">
             {missing[symbol] ? <p className="note err">{symbol} is not listed on Kraken. Try the other quote currency or another coin.</p> : <>
-              <div className="big" data-learn="last_price"><span className={t ? (t.changePct >= 0 ? "up" : "dn") : ""}>{t ? price(t.last) : "…"}</span></div>
+              <div className="big" data-learn="last_price">{t ? <Tick value={t.last}>{price(t.last)}</Tick> : "…"}</div>
               <div className="kv" data-learn="change_24h">24h change<b className={t ? (t.changePct >= 0 ? "up" : "dn") : ""}>{t ? pct(t.changePct) : "—"}</b></div>
               <div className="kv" data-learn="range_24h">24h range<b>{t ? `${price(t.low)} – ${price(t.high)}` : "—"}</b></div>
               <div className="kv" data-learn="volume_24h">24h volume<b>{t ? qs + compact(t.volume * t.vwap) : "—"}</b></div>
@@ -269,7 +272,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} onReview={() => openReview()} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.15 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.16 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
@@ -305,7 +308,7 @@ function Logo() {
   // A highlighter-yellow tile with three rising candles cut out of it.
   return (
     <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#f4e04d" />
+      <rect width="32" height="32" rx="7" fill="#f2f0ea" />
       <g fill="#0a0a0a">
         <rect x="7.4" y="13" width="1.4" height="13" rx=".7" /><rect x="5.6" y="16" width="5" height="7" rx="1" />
         <rect x="15.3" y="9" width="1.4" height="15" rx=".7" /><rect x="13.5" y="11.5" width="5" height="9" rx="1" />
