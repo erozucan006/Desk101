@@ -88,3 +88,14 @@ export function useNow(ms: number) {
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), ms); return () => clearInterval(id); }, [ms]);
   return now;
 }
+
+/** True while a CSS media query matches. */
+export function useMedia(query: string) {
+  const [m, setM] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query), f = () => setM(mq.matches);
+    f(); mq.addEventListener("change", f);
+    return () => mq.removeEventListener("change", f);
+  }, [query]);
+  return m;
+}

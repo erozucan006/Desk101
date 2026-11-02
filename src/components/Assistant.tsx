@@ -2,16 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { useLive } from "../lib/hooks";
 import { screenContext, suggestions } from "../lib/askContext";
 import type { EconEvent } from "../lib/calendar";
+import { LearnBody } from "./LearnDrawer";
 
 type Msg = { role: "user" | "assistant"; content: string; error?: boolean };
 const STORE = "d101.ask";
 
 const load = (): Msg[] => { try { return JSON.parse(sessionStorage.getItem(STORE) || "[]"); } catch { return []; } };
 
-/** "Ask Desk": a tutor that sees what is on the screen. Floating button + panel. */
-export function Assistant({ open, onOpen, onClose, prefill, nextEvent, paper }: {
+/**
+ * "Ask Desk": a tutor that sees what is on the screen.
+ * Wide screens: a rail docked on the right that also holds Learn explanations (collapsible).
+ * Small screens: a floating button and a panel.
+ */
+export function Assistant({ open, onOpen, onClose, prefill, nextEvent, paper, docked = false, learnKey = null, onCloseLearn }: {
   open: boolean; onOpen: () => void; onClose: () => void; prefill: string | null;
   nextEvent?: EconEvent | null; paper?: { equity: number; positions: string[] };
+  docked?: boolean; learnKey?: string | null; onCloseLearn?: () => void;
 }) {
   const ctx = useLive();
   const [msgs, setMsgs] = useState<Msg[]>(load);
@@ -24,14 +30,16 @@ export function Assistant({ open, onOpen, onClose, prefill, nextEvent, paper }: 
 
   useEffect(() => { try { sessionStorage.setItem(STORE, JSON.stringify(msgs.filter((m) => !m.error).slice(-30))); } catch { /* ignore */ } }, [msgs]);
   useEffect(() => { list.current?.scrollTo({ top: list.current.scrollHeight }); }, [msgs, open]);
-  useEffect(() => { if (open) setTimeout(() => input.current?.focus(), 60); }, [open]);
+  // focus the box when the student opens the tutor, not when the docked rail is simply there on page load
+  const wasOpen = useRef(open);
+  useEffect(() => { if (open && !wasOpen.current) setTimeout(() => input.current?.focus(), 60); wasOpen.current = open; }, [open]);
   useEffect(() => { if (open && prefill) { setText(prefill); setTimeout(() => input.current?.focus(), 60); } }, [open, prefill]);
   useEffect(() => {
-    if (!open) return;
+    if (!open || docked) return;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
-  }, [open, onClose]);
+  }, [open, onClose, docked]);
 
   const ask = async (q: string) => {
     q = q.trim();
@@ -71,18 +79,34 @@ export function Assistant({ open, onOpen, onClose, prefill, nextEvent, paper }: 
 
   const starters = suggestions(ctx, nextEvent);
 
+  if (docked && !open) {
+    return (
+      <aside className="rail collapsed" aria-label="Ask Desk (collapsed)">
+        <button className="rail-tab" onClick={onOpen} title="Open Ask Desk" aria-label="Open Ask Desk">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <span>Ask Desk</span>
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <>
-      <button className={`ask-fab ${open ? "hide" : ""}`} onClick={onOpen} aria-label="Ask Desk, your tutor" title="Ask Desk (your tutor)">
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.6c-.5.4-1.3.1-1.3-.6V16A2.5 2.5 0 0 1 4 13.5z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><circle cx="8.5" cy="9.6" r="1" fill="currentColor" /><circle cx="12" cy="9.6" r="1" fill="currentColor" /><circle cx="15.5" cy="9.6" r="1" fill="currentColor" /></svg>
-        Ask Desk
-      </button>
-      <section className={`ask ${open ? "open" : ""}`} aria-label="Ask Desk" aria-hidden={!open}>
+      {!docked && (
+        <button className={`ask-fab ${open ? "hide" : ""}`} onClick={onOpen} aria-label="Ask Desk, your tutor" title="Ask Desk (your tutor)">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.6c-.5.4-1.3.1-1.3-.6V16A2.5 2.5 0 0 1 4 13.5z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><circle cx="8.5" cy="9.6" r="1" fill="currentColor" /><circle cx="12" cy="9.6" r="1" fill="currentColor" /><circle cx="15.5" cy="9.6" r="1" fill="currentColor" /></svg>
+          Ask Desk
+        </button>
+      )}
+      <section className={docked ? "rail" : `ask ${open ? "open" : ""}`} aria-label="Ask Desk" aria-hidden={!docked && !open}>
         <header className="ask-head">
           <div><b>Ask Desk</b><span>Sees what's on your screen · {ctx.symbol}/{ctx.quote} {ctx.timeframe}</span></div>
           {msgs.length > 0 && <button className="link" onClick={() => { abort.current?.abort(); setMsgs([]); }}>New chat</button>}
-          <button className="x" onClick={onClose} aria-label="Close">×</button>
+          <button className="x" onClick={onClose} aria-label={docked ? "Collapse panel" : "Close"} title={docked ? "Collapse (the panel stays one click away)" : "Close"}>
+            {docked ? <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> : "×"}
+          </button>
         </header>
+        {docked && learnKey && <div className="rail-learn"><LearnBody k={learnKey} onClose={() => onCloseLearn?.()} onAsk={(q) => ask(q)} inRail /></div>}
         <div className="ask-list" ref={list} aria-live="polite">
           {!msgs.length && (
             <div className="ask-empty">

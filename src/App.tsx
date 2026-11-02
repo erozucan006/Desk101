@@ -3,7 +3,7 @@ import { APP_NAME, DEFAULT_WATCH, KRAKEN_WS, TIMEFRAMES, UNIVERSE, type Quote } 
 import { KrakenFeed } from "./lib/kraken";
 import { DemoFeed } from "./lib/demo";
 import type { Feed } from "./lib/types";
-import { useCandles, useFeedStatus, useJournal, useLive, useNow, useStored, useTickers } from "./lib/hooks";
+import { useCandles, useFeedStatus, useJournal, useLive, useMedia, useNow, useStored, useTickers } from "./lib/hooks";
 import { ccySymbol, compact, money, pct, price } from "./lib/format";
 import { live } from "./lib/live";
 import { Chart, type ChartEvent, type ChartOrder } from "./components/Chart";
@@ -43,6 +43,11 @@ export default function App() {
   const [learnKey, setLearnKey] = useState<string | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [askPrefill, setAskPrefill] = useState<string | null>(null);
+  // Wide screens dock the tutor on the right (with Learn explanations inside); the choice to collapse it is remembered.
+  const docked = useMedia("(min-width: 1400px)");
+  const [railOpen, setRailOpen] = useStored<boolean>("rail", true);
+  const tutorOpen = docked ? railOpen : askOpen;
+  useEffect(() => { if (docked && learnKey) setRailOpen(true); }, [docked, learnKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [welcomed, setWelcomed] = useStored<boolean>("welcomed", false);
   // Opening sequence once per browser session; skipped for reduced motion.
   const [intro, setIntro] = useState(() => {
@@ -200,10 +205,10 @@ export default function App() {
   return (
     <>
     {review && <Review data={review.data} sample={review.sample} onClose={() => setReview(null)} />}
-    {learnOn && <LearnTip />}
+    {learnOn && <LearnTip shown={learnKey} />}
     <div className="bg-smoke" aria-hidden="true"><Smoke intensity={0.6} /></div>
     {intro && <Intro last={tickers[`BTC/${quote}`]?.last} quote={quote} onDone={endIntro} />}
-    <div className={`app ${learnKey ? "with-learn" : ""} ${intro ? "dimmed" : "lit"}`}>
+    <div className={`app ${!docked && learnKey ? "with-learn" : ""} ${docked ? (railOpen ? "with-rail" : "with-rail-min") : ""} ${intro ? "dimmed" : "lit"}`}>
       <header className="topbar">
         <div className="brand"><Logo /><span>Desk<em>101</em></span></div>
         <label className="cmd" htmlFor="cmd"><span>›</span>
@@ -278,13 +283,14 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} onReview={() => openReview()} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.18 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.19 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
 
-      <LearnDrawer k={learnKey} onClose={() => setLearnKey(null)} onAsk={(q) => { setLearnKey(null); setAskPrefill(q); setAskOpen(true); }} />
-      <Assistant open={askOpen} onOpen={() => { setAskPrefill(null); setAskOpen(true); }} onClose={() => setAskOpen(false)} prefill={askPrefill} nextEvent={soon}
+      {!docked && <LearnDrawer k={learnKey} onClose={() => setLearnKey(null)} onAsk={(q) => { setLearnKey(null); setAskPrefill(q); setAskOpen(true); }} />}
+      <Assistant docked={docked} learnKey={docked ? learnKey : null} onCloseLearn={() => setLearnKey(null)}
+        open={tutorOpen} onOpen={() => { setAskPrefill(null); if (docked) setRailOpen(true); else setAskOpen(true); }} onClose={() => (docked ? setRailOpen(false) : setAskOpen(false))} prefill={askPrefill} nextEvent={soon}
         paper={{ equity: equity(acc, quote, prices), positions: Object.entries(acc.positions).filter(([s]) => s.endsWith("/" + quote)).map(([s, p]) => `${p.qty} ${s.split("/")[0]}`) }} />
 
       {helpOpen && (

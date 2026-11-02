@@ -3,7 +3,7 @@ import { LEARN } from "../lib/learn";
 import { useLive } from "../lib/hooks";
 
 /** Learn mode on a desktop: hovering anything explainable shows a short note beside it. Click opens the full explanation. */
-export function LearnTip() {
+export function LearnTip({ shown = null }: { shown?: string | null }) {
   const ctx = useLive();
   const [tip, setTip] = useState<{ key: string; r: DOMRect } | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number; above: boolean } | null>(null);
@@ -36,7 +36,7 @@ export function LearnTip() {
     setPos({ x, y: below ? tip.r.bottom + 10 : tip.r.top - 10 - h, above: !below });
   }, [tip]);
 
-  if (!tip) return null;
+  if (!tip || tip.key === shown) return null; // already open in the panel
   const e = LEARN[tip.key];
   const now = e.now?.(ctx) ?? null;
   return (
