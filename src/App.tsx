@@ -22,6 +22,7 @@ import { EventCard } from "./components/EventCard";
 import { Hero } from "./components/Hero";
 import { Intro } from "./components/Intro";
 import { Tick } from "./components/Tick";
+import { LearnTip } from "./components/LearnTip";
 import { Smoke } from "./components/Smoke";
 import { Review } from "./components/Review";
 import { buildReview, sampleTrades, type Review as ReviewData } from "./lib/review";
@@ -195,6 +196,7 @@ export default function App() {
   return (
     <>
     {review && <Review data={review.data} sample={review.sample} onClose={() => setReview(null)} />}
+    {learnOn && <LearnTip />}
     <div className="bg-smoke" aria-hidden="true"><Smoke intensity={0.6} /></div>
     {intro && <Intro last={tickers[`BTC/${quote}`]?.last} quote={quote} onDone={endIntro} />}
     <div className={`app ${learnKey ? "with-learn" : ""} ${intro ? "dimmed" : "lit"}`}>
@@ -214,7 +216,7 @@ export default function App() {
           </button>
           <span className={`feed ${status}`} title={isDemo ? "Synthetic data for demos. Remove ?demo=1 for live prices." : "Public market data from Kraken"}>{statusLabel}</span>
         </div>
-        <div className={`msg ${msg.tone ?? ""}`} role="status">{learnOn && !learnKey ? "Learn mode: click any underlined label to see what it means and what it says right now." : msg.text}</div>
+        <div className={`msg ${msg.tone ?? ""}`} role="status">{learnOn && !learnKey ? "Learn mode: point at any label or number to see what it means. Click (or tap) for the full explanation." : msg.text}</div>
       </header>
 
       {!welcomed && (
@@ -272,7 +274,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} onReview={() => openReview()} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.16 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.17 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
