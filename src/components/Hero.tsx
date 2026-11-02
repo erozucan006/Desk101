@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { Feed, Ticker } from "../lib/types";
-import { useCandles } from "../lib/hooks";
-import { DitherChart } from "./Dither";
+import type { Ticker } from "../lib/types";
+import { Smoke } from "./Smoke";
 import { price } from "../lib/format";
 import { APP_TAGLINE } from "../config";
 
 /** First-visit hero: a live price annotated like a page of study notes. */
-export function Hero({ feed, t, symbol, onStart, onSkip, ready = true }: { feed: Feed; t?: Ticker; symbol: string; onStart: () => void; onSkip: () => void; ready?: boolean }) {
-  const { candles } = useCandles(feed, symbol, 1440); // daily closes for the engraving
+export function Hero({ t, symbol, onStart, onSkip, onSample }: { t?: Ticker; symbol: string; onStart: () => void; onSkip: () => void; onSample: () => void }) {
   const [flash, setFlash] = useState<"up" | "dn" | null>(null);
   const prev = useRef<number | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -28,12 +26,13 @@ export function Hero({ feed, t, symbol, onStart, onSkip, ready = true }: { feed:
 
   return (
     <section className="hero" aria-labelledby="hero-h">
-      <div className="hero-art">{ready && <DitherChart candles={candles} />}</div>
+      <div className="hero-art"><Smoke intensity={0.75} /></div>
       <h1 id="hero-h">{APP_TAGLINE}</h1>
       <p className="hero-lede">Real crypto prices, live from Kraken, with a note beside every number telling you what it means right now. Practise with a 10,000 paper account, and the journal shows you the habits behind your wins and losses.</p>
       <div className="hero-actions">
         <button className="go" onClick={onStart}>Start with Learn on</button>
         <button className="ghost" onClick={onSkip}>I know my way around</button>
+        <button className="link hero-sample" onClick={onSample}>Watch a sample month in review</button>
       </div>
 
       <figure className="specimen" aria-label={`Live ${base} price with explanations`}>

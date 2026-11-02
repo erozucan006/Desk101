@@ -14,9 +14,10 @@ type Props = {
   entryCtx: () => JournalTrade["ctx"];
   say: (msg: string, tone?: "ok" | "err") => void;
   onClosePaper: (symbol: string) => void;
+  onReview: () => void;
 };
 
-export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, say, onClosePaper }: Props) {
+export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, say, onClosePaper, onReview }: Props) {
   const [side, setSide] = useState<Side>("long");
   const [sym, setSym] = useState("");
   const [qty, setQty] = useState("");
@@ -79,7 +80,7 @@ export function JournalPanel({ trades, tickers, sel, quote, quoteSym, entryCtx, 
 
   return (
     <section className="pnl journal">
-      <PanelHead code="JR" title="Positions & journal" status={<>{trades.length} entries · <button className="link" onClick={exportCSV} disabled={!trades.length}>Export CSV</button></>} />
+      <PanelHead code="JR" title="Positions & journal" status={<><button className="rv-open" onClick={onReview}>Month in review</button> {trades.length} entries · <button className="link" onClick={exportCSV} disabled={!trades.length}>Export CSV</button></>} />
       <div className="tiles">
         <div data-learn="unrealized">Unrealized P&amp;L<b className={cls(unreal.v)}>{open.length ? money(unreal.v, quoteSym) + (unreal.known ? "" : "*") : "—"}</b></div>
         <div data-learn="realized">Realized P&amp;L<b className={cls(st.realized)}>{st.closed ? money(st.realized, quoteSym) : "—"}</b></div>

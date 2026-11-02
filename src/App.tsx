@@ -21,6 +21,8 @@ import { usePairs } from "./lib/pairs";
 import { EventCard } from "./components/EventCard";
 import { Hero } from "./components/Hero";
 import { Intro } from "./components/Intro";
+import { Review } from "./components/Review";
+import { buildReview, sampleTrades, type Review as ReviewData } from "./lib/review";
 
 const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -39,6 +41,15 @@ export default function App() {
   const [intro, setIntro] = useState(() => {
     try { return !sessionStorage.getItem("d101.intro") && !window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; }
   });
+  const [review, setReview] = useState<{ data: ReviewData; sample: boolean } | null>(null);
+  const openReview = (forceSample = false) => {
+    const own = forceSample ? null : buildReview(trades);
+    if (own) setReview({ data: own, sample: false });
+    else {
+      if (!forceSample) say("Close at least 3 trades to get your own review. Here is a sample month.", "ok");
+      setReview({ data: buildReview(sampleTrades())!, sample: true });
+    }
+  };
   const endIntro = useCallback(() => { setIntro(false); try { sessionStorage.setItem("d101.intro", "1"); } catch { /* ignore */ } }, []);
   const [helpOpen, setHelpOpen] = useState(false);
   const [msg, setMsg] = useState<{ text: string; tone?: "ok" | "err" }>({ text: "Type a command and press Enter. Try BTC 4H, BUY ETH 0.5 or HELP." });
@@ -181,6 +192,7 @@ export default function App() {
 
   return (
     <>
+    {review && <Review data={review.data} sample={review.sample} onClose={() => setReview(null)} />}
     {intro && <Intro last={tickers[`BTC/${quote}`]?.last} quote={quote} onDone={endIntro} />}
     <div className={`app ${learnKey ? "with-learn" : ""} ${intro ? "dimmed" : "lit"}`}>
       <header className="topbar">
@@ -203,7 +215,7 @@ export default function App() {
       </header>
 
       {!welcomed && (
-        <Hero feed={feed} ready={!intro} t={tickers[`BTC/${quote}`]} symbol={`BTC/${quote}`} onStart={() => { setLearnOn(true); setWelcomed(true); }} onSkip={() => setWelcomed(true)} />
+        <Hero onSample={() => openReview(true)} t={tickers[`BTC/${quote}`]} symbol={`BTC/${quote}`} onStart={() => { setLearnOn(true); setWelcomed(true); }} onSkip={() => setWelcomed(true)} />
       )}
 
       <main className="grid">
@@ -254,10 +266,10 @@ export default function App() {
         <Scanner universe={UNIVERSE} quote={quote} tickers={tickers} watch={watch} onSelect={select} onAdd={add} />
       </section>
 
-      <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} />
+      <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} onReview={() => openReview()} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.14 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.15 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
