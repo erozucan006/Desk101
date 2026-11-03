@@ -35,7 +35,7 @@ export function Ribbons({ closes }: { closes: number[] }) {
       }
       const lo = Math.min(...out), hi = Math.max(...out), m = (lo + hi) / 2, h = (hi - lo) / 2 || 1;
       const n = out.map((v) => (v - m) / h);
-      return n.map((_, i) => { let s = 0, k = 0; for (let j = -4; j <= 4; j++) { const v = n[i + j]; if (v != null) { s += v; k++; } } return s / k; });
+      return n.map((_, i) => { let s = 0, k = 0; for (let j = -14; j <= 14; j++) { const v = n[i + j]; if (v != null) { s += v; k++; } } return s / k; });
     };
 
     const draw = (now: number) => {
