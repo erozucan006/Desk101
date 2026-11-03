@@ -62,7 +62,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line-
 
 /* ---------- top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 5; background: rgba(10, 10, 10, .86); backdrop-filter: blur(10px); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding-block: 10px 6px; border-bottom: 1px solid var(--line); margin-inline: -12px; padding-inline: 12px; }
-.brand { display: flex; align-items: center; gap: 9px; font-family: var(--f-display); font-weight: 700; font-size: 19px; letter-spacing: -.02em; white-space: nowrap; }
+.brand { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 9px; font-family: var(--f-display); font-weight: 700; font-size: 19px; letter-spacing: -.02em; white-space: nowrap; }
 .brand svg { display: block; }
 .brand em { font-style: normal; color: var(--dim); font-weight: 800; }
 .cmd { flex: 1 1 320px; max-width: 560px; min-width: 0; display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r); padding: 0 10px; height: 34px; }

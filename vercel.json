@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/desk/:path*", "destination": "/index.html" }, { "source": "/desk", "destination": "/index.html" }]
+}

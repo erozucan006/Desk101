@@ -210,7 +210,7 @@ export default function App() {
     {intro && <Intro last={tickers[`BTC/${quote}`]?.last} quote={quote} onDone={endIntro} />}
     <div className={`app ${!docked && learnKey ? "with-learn" : ""} ${docked ? (railOpen ? "with-rail" : "with-rail-min") : ""} ${intro ? "dimmed" : "lit"}`}>
       <header className="topbar">
-        <div className="brand"><Logo /><span>Desk<em>101</em></span></div>
+        <a className="brand" href="/" title="About Desk101"><Logo /><span>Desk<em>101</em></span></a>
         <label className="cmd" htmlFor="cmd"><span>›</span>
           <input id="cmd" ref={cmdRef} autoComplete="off" spellCheck={false} placeholder="Type a command: BTC 4H, BUY ETH 0.5, HELP"
             onKeyDown={(e) => { if (e.key === "Enter") { run(e.currentTarget.value); e.currentTarget.value = ""; } }} />
@@ -283,7 +283,7 @@ export default function App() {
       <JournalPanel trades={trades} tickers={tickers} sel={sel} quote={quote} quoteSym={qs} entryCtx={entryCtx} say={say} onClosePaper={closePaper} onReview={() => openReview()} />
 
       <footer className="foot">
-        <span>{APP_NAME} v0.19 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
+        <span>{APP_NAME} v0.20 · Market data: Kraken public API{isDemo ? " (demo mode: synthetic data)" : ""}.</span>
         <span>For education only. Nothing here is investment advice or a recommendation to buy or sell.</span>
         <span>This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. Use of FRED data is subject to the <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" target="_blank" rel="noopener noreferrer">FRED® API Terms of Use</a>.</span>
       </footer>
